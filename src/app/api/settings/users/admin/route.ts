@@ -1,0 +1,68 @@
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
+
+// POST - Toggle admin status for a user
+export async function POST(request: Request) {
+  try {
+    const { nim, isAdmin } = await request.json();
+
+    if (!nim || typeof nim !== 'string') {
+      return NextResponse.json(
+        { error: 'NIM harus diisi' },
+        { status: 400 }
+      );
+    }
+
+    // Check if user exists in whitelist
+    const whitelist = await prisma.whitelist.findUnique({
+      where: { nim }
+    });
+
+    if (!whitelist) {
+      return NextResponse.json(
+        { error: 'User tidak ditemukan di whitelist' },
+        { status: 404 }
+      );
+    }
+
+    if (isAdmin) {
+      // Add to admin with default password "pemilu2026"
+      try {
+        const defaultPassword = await bcrypt.hash('pemilu2026', 10);
+        await prisma.admin.create({
+          data: {
+            nim,
+            email: `${nim}@mahasiswa.itb.ac.id`,
+            password: defaultPassword
+          }
+        });
+      } catch (e: any) {
+        // If already exists, that's okay
+        if (e.code !== 'P2002') {
+          throw e;
+        }
+      }
+    } else {
+      // Remove from admin
+      try {
+        await prisma.admin.delete({
+          where: { nim }
+        });
+      } catch (e: any) {
+        // If doesn't exist, that's okay
+        if (e.code !== 'P2025') {
+          throw e;
+        }
+      }
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error toggling admin status:', error);
+    return NextResponse.json(
+      { error: 'Gagal mengubah status admin' },
+      { status: 500 }
+    );
+  }
+}

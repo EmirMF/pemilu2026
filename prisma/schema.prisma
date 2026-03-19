@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Voter {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  nim       String    @unique
+  name      String?   // Nama lengkap pemilih
+  email     String    @unique
+  password  String?   // Hashed password for voter login
+  hasVoted  Boolean   @default(false)
+  votedAt   DateTime?
+  createdAt DateTime  @default(now())
+}
+
+model Admin {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  nim       String    @unique
+  name      String?   // Nama lengkap admin
+  email     String    @unique
+  password  String?   // Hashed password for admin login
+  createdAt DateTime? @default(now())
+}
+
+model Candidate {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  vision      String
+  mission     String?
+  photo       String?
+  draftLink   String?
+  VoteRecords VoteRecord[]
+}
+
+model VoteRecord {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  candidateId String   @db.ObjectId
+  createdAt   DateTime @default(now())
+
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+}
+
+model Whitelist {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  nim       String   @unique
+  name      String?  // Nama lengkap
+  isInDPT   Boolean  @default(false) // true = bisa vote, false = hanya bisa login
+  createdAt DateTime @default(now())
+}
+
+model ElectionSettings {
+  id                String    @id @default(auto()) @map("_id") @db.ObjectId
+  key               String    @unique
+  isOpen            Boolean   @default(true)
+  countdownEnd      DateTime?
+  countdownType     String?   @default("end") // "start" or "end"
+  bgGradientFrom    String?   @default("#FFC300") // Gradient start color
+  bgGradientVia     String?   @default("#FF8040") // Gradient middle color
+  bgGradientTo      String?   @default("#FFE6B3") // Gradient end color
+  resultsPublished  Boolean   @default(false) // Whether results are published to public
+  resultsPublishedAt DateTime? // When results were last published
+  showTotalVotes    Boolean   @default(true) // Show/hide total votes badge on landing page
+  showVotingStatus  Boolean   @default(true) // Show/hide voting status badge (Dibuka/Ditutup)
+  showUserVoteStatus Boolean  @default(true) // Show/hide user vote status badge (Sudah/Belum vote)
+  voteButtonState   String?   @default("default") // default | before | after | hidden
+  timelineEvents    String?   // JSON string of timeline events [{date, title}]
+  publishPassword   String?   // Hashed password for publishing results
+  otpEnabled        Boolean   @default(true) // Enable/disable OTP authentication
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model PublishedResult {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  candidateId String   @db.ObjectId
+  name        String
+  voteCount   Int
+  percentage  Float    @default(0)
+  publishedAt DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  action      String   // Action type: VOTE, LOGIN, ADMIN_LOGIN, SETTINGS_CHANGE, etc.
+  actorNim    String?  // NIM of the person performing the action
+  actorEmail  String?  // Email of the actor
+  actorRole   String?  // VOTER, ADMIN
+  targetId    String?  // ID of affected resource (candidateId, userId, etc.)
+  targetType  String?  // Type of target: CANDIDATE, USER, SETTINGS, etc.
+  details     String?  // JSON string with additional details
+  ipAddress   String?  // IP address of the request
+  userAgent   String?  // User agent string
+  status      String   // SUCCESS, FAILED, BLOCKED
+  errorMsg    String?  // Error message if failed
+  createdAt   DateTime @default(now())
+  
+  @@index([action])
+  @@index([actorNim])
+  @@index([createdAt])
+  @@index([status])
+}
