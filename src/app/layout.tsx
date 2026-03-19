@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import Footer from "@/components/Footer";
@@ -54,7 +55,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <LoadingOverlay />
+          <Suspense fallback={null}>
+            <LoadingOverlay />
+          </Suspense>
           {children}
           <Footer />
         </ThemeProvider>
