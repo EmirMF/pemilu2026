@@ -10,7 +10,14 @@ export async function getElectionSettings() {
   return prisma.electionSettings.upsert({
     where: { key: ELECTION_SETTINGS_KEY },
     update: {},
-    create: { key: ELECTION_SETTINGS_KEY, isOpen: true, otpEnabled: true },
+    create: { 
+      key: ELECTION_SETTINGS_KEY, 
+      isOpen: true, 
+      otpEnabled: true,
+      otpLogEnabled: false,
+      otpDashboardOnly: false,
+      testMode: true
+    },
   })
 }
 
@@ -54,6 +61,10 @@ export async function setElectionOpen(
       bgGradientFrom: bgGradientFrom || '#FFC300',
       bgGradientVia: bgGradientVia || '#FF8040',
       bgGradientTo: bgGradientTo || '#FFE6B3',
+      otpEnabled: true,
+      otpLogEnabled: false,
+      otpDashboardOnly: false,
+      testMode: true
     },
   })
   
@@ -62,4 +73,3 @@ export async function setElectionOpen(
   
   return result
 }
-
