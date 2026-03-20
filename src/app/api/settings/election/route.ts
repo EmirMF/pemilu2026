@@ -20,6 +20,7 @@ function formatElectionSettings(settings: {
   showVotingStatus?: boolean | null
   showUserVoteStatus?: boolean | null
   voteButtonState?: string | null
+  otpEnabled?: boolean | null
   updatedAt: Date
 }) {
   return {
@@ -33,6 +34,7 @@ function formatElectionSettings(settings: {
     showVotingStatus: settings.showVotingStatus ?? true,
     showUserVoteStatus: settings.showUserVoteStatus ?? true,
     voteButtonState: isVoteButtonState(settings.voteButtonState) ? settings.voteButtonState : 'default',
+    otpEnabled: settings.otpEnabled ?? false,
     updatedAt: settings.updatedAt,
   }
 }
