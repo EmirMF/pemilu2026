@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import GradientBackground from '@/components/GradientBackground';
@@ -9,18 +9,16 @@ import ThemeToggle from '@/components/ThemeToggle';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [step, setStep] = useState<'nim' | 'password' | 'sendOtp' | 'otp' | 'setPassword' | 'forgotPassword'>('nim');
+  const [step, setStep] = useState<'nim' | 'sendOtp' | 'otp'>('nim');
   const [nim, setNim] = useState('');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [otp, setOtp] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [isResettingPassword, setIsResettingPassword] = useState(false);
-  const [failedLoginAttempts, setFailedLoginAttempts] = useState(0);
+  
+  // Refs for OTP inputs
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Save state to sessionStorage
   useEffect(() => {
@@ -90,7 +88,7 @@ export default function LoginPage() {
     setEmail(fullEmail);
 
     try {
-      // Check if user has password and active OTP
+      // Check if user has active OTP
       const checkRes = await fetch('/api/auth/check-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,16 +98,12 @@ export default function LoginPage() {
       const checkData = await checkRes.json();
 
       if (checkRes.ok) {
-        // Prioritize active OTP over password
         if (checkData.hasActiveOTP) {
           // User has active OTP, go directly to OTP input
           setMessage('Kode OTP masih aktif. Silakan masukkan kode OTP yang telah dikirim.');
           setStep('otp');
-        } else if (checkData.hasPassword) {
-          // User has password, show password input
-          setStep('password');
         } else {
-          // User doesn't have password and no active OTP, show send OTP button
+          // No active OTP, show send OTP button
           setStep('sendOtp');
         }
       } else {
@@ -139,6 +133,10 @@ export default function LoginPage() {
       if (otpRes.ok) {
         setMessage(otpData.message || 'Kode OTP telah dikirim ke email Anda');
         setStep('otp');
+        // Focus first OTP input after a short delay
+        setTimeout(() => {
+          otpInputRefs.current[0]?.focus();
+        }, 100);
       } else {
         setError(otpData.error || 'Gagal mengirim OTP');
       }
@@ -149,68 +147,44 @@ export default function LoginPage() {
     }
   };
 
-  const handlePasswordLogin = async (e: React.FormEvent) => {
+  const handleOTPChange = (index: number, value: string) => {
+    // Only allow numbers
+    if (value && !/^\d$/.test(value)) return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    // Auto-focus next input
+    if (value && index < 5) {
+      otpInputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleOTPKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    // Handle backspace
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpInputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleOTPPaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/auth/login-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        // Reset failed attempts on successful login
-        setFailedLoginAttempts(0);
-        // Redirect all users to homepage
-        router.push('/');
-      } else {
-        // Increment failed attempts
-        setFailedLoginAttempts(prev => prev + 1);
-        setError(data.error || 'Login gagal');
-      }
-    } catch (err) {
-      setError('Terjadi kesalahan koneksi');
-    } finally {
-      setLoading(false);
+    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    const newOtp = [...otp];
+    
+    for (let i = 0; i < pastedData.length; i++) {
+      newOtp[i] = pastedData[i];
     }
-  };
-
-  const handleForgotPassword = () => {
-    setError('');
-    setMessage('');
-    setIsResettingPassword(true);
-    setStep('forgotPassword');
-  };
-
-  const handleSendResetOTP = async () => {
-    setError('');
-    setMessage('');
-    setLoading(true);
-
-    try {
-      const otpRes = await fetch('/api/auth/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      });
-
-      const otpData = await otpRes.json();
-
-      if (otpRes.ok) {
-        setMessage(otpData.message || 'Kode OTP untuk reset password telah dikirim ke email Anda');
-        setStep('otp');
-      } else {
-        setError(otpData.error || 'Gagal mengirim OTP');
-      }
-    } catch (err) {
-      setError('Terjadi kesalahan koneksi');
-    } finally {
-      setLoading(false);
+    
+    setOtp(newOtp);
+    
+    // Focus the next empty input or the last one
+    const nextEmptyIndex = newOtp.findIndex(val => !val);
+    if (nextEmptyIndex !== -1) {
+      otpInputRefs.current[nextEmptyIndex]?.focus();
+    } else {
+      otpInputRefs.current[5]?.focus();
     }
   };
 
@@ -219,65 +193,31 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    const otpCode = otp.join('');
+
     try {
       const res = await fetch('/api/auth/verify-otp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: otp }),
+        body: JSON.stringify({ code: otpCode }),
       });
 
       const data = await res.json();
 
       if (res.ok) {
-        // OTP verified, now ask to set password
-        if (isResettingPassword) {
-          setMessage('OTP berhasil diverifikasi. Silakan set password baru Anda.');
-        } else {
-          setMessage('OTP berhasil diverifikasi. Silakan set password Anda.');
-        }
-        setStep('setPassword');
+        // OTP verified, user is now logged in
+        setMessage('Login berhasil! Mengalihkan...');
+        // Clear session storage
+        sessionStorage.removeItem('loginState');
+        // Redirect to homepage
+        setTimeout(() => {
+          router.push(data.redirect || '/');
+        }, 1000);
       } else {
         setError(data.error || 'Kode OTP salah');
-      }
-    } catch (err) {
-      setError('Terjadi kesalahan koneksi');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSetPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-
-    if (newPassword.length < 6) {
-      setError('Password minimal 6 karakter');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setError('Password tidak cocok');
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/auth/set-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: newPassword }),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        setMessage('Password berhasil diset. Anda akan diarahkan...');
-        setTimeout(() => {
-          router.push('/');
-        }, 1500);
-      } else {
-        setError(data.error || 'Gagal set password');
+        // Clear OTP inputs on error
+        setOtp(['', '', '', '', '', '']);
+        otpInputRefs.current[0]?.focus();
       }
     } catch (err) {
       setError('Terjadi kesalahan koneksi');
@@ -302,6 +242,8 @@ export default function LoginPage() {
 
       if (res.ok) {
         setMessage('Kode OTP baru telah dikirim');
+        setOtp(['', '', '', '', '', '']);
+        otpInputRefs.current[0]?.focus();
       } else {
         setError(data.error || 'Gagal mengirim OTP');
       }
@@ -311,6 +253,8 @@ export default function LoginPage() {
       setLoading(false);
     }
   };
+
+  const isOtpComplete = otp.every(digit => digit !== '');
 
   return (
     <main className="min-h-screen relative overflow-hidden">
@@ -376,6 +320,11 @@ export default function LoginPage() {
               >
                 {loading ? 'Memproses...' : 'Lanjutkan'}
               </Button>
+              <div className="text-center mt-4">
+                <p className="text-sm text-neutral-600 dark:text-neutral-400">
+                  Admin? <a href="/admin" className="text-red-600 hover:text-red-700 font-medium">Login di sini</a>
+                </p>
+              </div>
             </form>
           )}
 
@@ -386,7 +335,7 @@ export default function LoginPage() {
                   <span className="font-medium">Email:</span> {email}
                 </p>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Anda belum memiliki password. Silakan kirim kode OTP untuk verifikasi.
+                  Kami akan mengirim kode OTP ke email Anda untuk verifikasi login.
                 </p>
               </div>
               <Button
@@ -406,161 +355,60 @@ export default function LoginPage() {
             </div>
           )}
 
-          {step === 'password' && (
-            <form onSubmit={handlePasswordLogin} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={email}
-                  disabled
-                  className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Masukkan password"
-                  className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                  required
-                />
-                {failedLoginAttempts >= 5 && (
-                  <button
-                    type="button"
-                    onClick={handleForgotPassword}
-                    className="text-xs text-red-600 hover:text-red-800 mt-1"
-                  >
-                    Lupa password?
-                  </button>
-                )}
-              </div>
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-              >
-                {loading ? 'Login...' : 'Login'}
-              </Button>
-              <button
-                type="button"
-                onClick={() => setStep('nim')}
-                className="w-full text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 text-sm"
-              >
-                ← Kembali
-              </button>
-            </form>
-          )}
-
-          {step === 'forgotPassword' && (
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-lg">
-                <p className="text-sm text-neutral-700 dark:text-neutral-300 mb-2">
-                  <span className="font-medium">Email:</span> {email}
-                </p>
-                <p className="text-sm text-neutral-600 dark:text-neutral-400">
-                  Kami akan mengirim kode OTP untuk reset password Anda.
-                </p>
-              </div>
-              <Button
-                onClick={handleSendResetOTP}
-                disabled={loading}
-                className="w-full bg-red-600 text-white py-3 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-              >
-                {loading ? 'Mengirim...' : 'Kirim Kode OTP'}
-              </Button>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsResettingPassword(false);
-                  setStep('password');
-                }}
-                className="w-full text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200 text-sm"
-              >
-                ← Kembali
-              </button>
-            </div>
-          )}
-
           {step === 'otp' && (
             <form onSubmit={handleOTPVerify} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-3 text-center">
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-4 text-center">
                   Masukkan Kode OTP
                 </label>
-                <input
-                  type="text"
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
-                  placeholder="000000"
-                  maxLength={6}
-                  className="w-full px-6 py-4 border-2 border-neutral-300 dark:border-neutral-700 rounded-xl bg-neutral-50 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-1 focus:ring-red-500 focus:border-red-500 transition-all duration-200 text-center text-3xl font-bold tracking-[0.5em]"
-                  required
-                />
-                <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-3 text-center">
-                  Kode OTP telah dikirim ke<br />
-                  <span className="font-medium text-neutral-700 dark:text-neutral-300">{email}</span>
+                <div className="flex justify-center gap-2 mb-4">
+                  {otp.map((digit, index) => (
+                    <input
+                      key={index}
+                      ref={(el) => { otpInputRefs.current[index] = el; }}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleOTPChange(index, e.target.value)}
+                      onKeyDown={(e) => handleOTPKeyDown(index, e)}
+                      onPaste={index === 0 ? handleOTPPaste : undefined}
+                      className="w-12 h-14 text-center text-2xl font-semibold border-2 border-neutral-300 dark:border-neutral-600 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
+                      required
+                    />
+                  ))}
+                </div>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center">
+                  Kode OTP telah dikirim ke {email}
                 </p>
               </div>
-              <button
+              <Button
                 type="submit"
-                disabled={loading || otp.length !== 6}
+                disabled={loading || !isOtpComplete}
                 className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
               >
-                {loading ? 'Verifikasi...' : 'Verifikasi OTP'}
-              </button>
-              <button
-                type="button"
-                onClick={handleResendOTP}
-                disabled={loading}
-                className="w-full text-red-600 hover:text-red-800 text-sm font-medium"
-              >
-                Kirim Ulang OTP
-              </button>
-            </form>
-          )}
-
-          {step === 'setPassword' && (
-            <form onSubmit={handleSetPassword} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Password Baru
-                </label>
-                <input
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="Minimal 6 karakter"
-                  className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                  required
-                />
+                {loading ? 'Memverifikasi...' : 'Verifikasi & Login'}
+              </Button>
+              <div className="flex justify-between items-center text-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep('nim');
+                    setOtp(['', '', '', '', '', '']);
+                  }}
+                  className="text-neutral-600 dark:text-neutral-400 hover:text-neutral-800 dark:hover:text-neutral-200"
+                >
+                  ← Kembali
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={loading}
+                  className="text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 disabled:opacity-50"
+                >
+                  Kirim ulang OTP
+                </button>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                  Konfirmasi Password
-                </label>
-                <input
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  placeholder="Ketik ulang password"
-                  className="w-full px-4 py-3 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
-                  required
-                />
-              </div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-red-600 text-white py-3 rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
-              >
-                {loading ? 'Menyimpan...' : 'Set Password'}
-              </button>
             </form>
           )}
         </div>

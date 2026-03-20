@@ -75,9 +75,14 @@ export async function POST(request: Request) {
       // Ignore admin check errors
     }
 
-    // OTP is valid. Set a signed cookie for the user.
+    // OTP is valid. Set a signed cookie for the user and log them in directly
     const signedSession = signCookie(email);
-    const response = NextResponse.json({ success: true, message: 'Verifikasi berhasil' });
+    const response = NextResponse.json({ 
+      success: true, 
+      message: 'Login berhasil',
+      redirect: '/' // Redirect to homepage after successful OTP verification
+    });
+    
     response.cookies.set('voter_session', signedSession, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -89,7 +94,7 @@ export async function POST(request: Request) {
     await redis.del(`otp:${email}`);
     response.cookies.delete('otp_email');
 
-    // Audit: successful OTP verification
+    // Audit: successful OTP verification and login
     await createAuditLog({
       action: 'LOGIN_OTP_VERIFIED',
       actorNim: nim,

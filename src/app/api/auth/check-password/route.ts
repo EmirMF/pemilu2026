@@ -40,27 +40,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'NIM tidak terdaftar dalam whitelist' }, { status: 403 });
     }
 
-    // Check in Voter table
-    const voter = await prisma.voter.findUnique({
-      where: { email }
-    });
-
     // Check in Admin table
     const admin = await prisma.admin.findUnique({
       where: { nim }
     });
 
-    const hasPassword = !!((voter as any)?.password || admin?.password);
     const isAdmin = !!admin;
 
     // Check if OTP exists in Redis
     const existingOTP = await redis.get(`otp:${email}`);
     const hasActiveOTP = !!existingOTP;
 
+    // For non-admin users, always use OTP (no password)
+    // For admin users, they should use /admin route with password
     return NextResponse.json({
-      hasPassword,
+      hasPassword: false, // Always false for regular login
       isAdmin,
-      requiresOTP: !hasPassword,
+      requiresOTP: true, // Always require OTP for regular login
       hasActiveOTP
     });
   } catch (error) {
