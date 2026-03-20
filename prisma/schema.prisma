@@ -78,6 +78,8 @@ model ElectionSettings {
   timelineEvents    String?   // JSON string of timeline events [{date, title}]
   publishPassword   String?   // Hashed password for publishing results
   otpEnabled        Boolean   @default(true) // Enable/disable OTP authentication
+  otpLogEnabled     Boolean   @default(false) // Enable/disable OTP logging to database (for admin dashboard)
+  otpDashboardOnly  Boolean   @default(false) // OTP Dashboard Only Mode: save to DB but don't send email
   testMode          Boolean   @default(true) // Enable/disable test mode (default true for safety)
   testEmail         String?   // Test email for test mode
   createdAt         DateTime  @default(now())
@@ -112,4 +114,21 @@ model AuditLog {
   @@index([actorNim])
   @@index([createdAt])
   @@index([status])
+}
+
+model OtpLog {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String
+  nim       String
+  otp       String
+  emailSent Boolean   @default(true) // Whether email was sent or dashboard-only mode
+  used      Boolean   @default(false)
+  usedAt    DateTime?
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  
+  @@index([email])
+  @@index([nim])
+  @@index([createdAt])
+  @@index([used])
 }

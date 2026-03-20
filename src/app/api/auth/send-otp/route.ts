@@ -73,19 +73,54 @@ export async function POST(request: Request) {
     // Store hashed OTP in Redis (valid for 10 mins = 600 seconds)
     await redis.set(`otp:${email}`, hashedOTP, 'EX', 600);
 
-    // Send email via Brevo (with test mode override)
-    try {
-      await sendOTPContent(email, code);
-      console.log(`OTP email sent successfully for ${email}`);
-    } catch (emailError) {
-      console.error('Email sending error:', emailError);
-      // Log OTP to console for dev/testing purposes if email fails
-      console.log(`\n\n[DEV MODE] OTP CODE FOR ${email}: ${code}\n\n`);
+    // Log OTP to database if enabled (for admin dashboard fallback or dashboard-only mode)
+    if (electionSettings.otpLogEnabled || electionSettings.otpDashboardOnly) {
+      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes from now
+      await prisma.otpLog.create({
+        data: {
+          email,
+          nim,
+          otp: code, // Store plain OTP for admin to view
+          expiresAt,
+          emailSent: !electionSettings.otpDashboardOnly, // Will be false in dashboard-only mode
+        },
+      });
+    }
+
+    // Send email via Brevo (skip if dashboard-only mode is enabled)
+    let emailSent = false;
+    if (!electionSettings.otpDashboardOnly) {
+      try {
+        await sendOTPContent(email, code);
+        console.log(`OTP email sent successfully for ${email}`);
+        emailSent = true;
+      } catch (emailError) {
+        console.error('Email sending error:', emailError);
+        // If email fails and OTP logging is disabled, log to console as fallback
+        if (!electionSettings.otpLogEnabled) {
+          console.log(`\n\n[FALLBACK] OTP CODE FOR ${email}: ${code}\n\n`);
+        }
+      }
+    } else {
+      console.log(`[DASHBOARD ONLY MODE] OTP saved to database for ${email}, email NOT sent`);
     }
 
     // Set signed email cookie (will overwrite old one automatically)
     const signedEmail = signCookie(email);
-    const response = NextResponse.json({ success: true, message: 'OTP terkirim ke email Anda' });
+    
+    // Debug: Log the actual values
+    console.log('[SEND-OTP DEBUG]');
+    console.log('otpDashboardOnly:', electionSettings.otpDashboardOnly);
+    console.log('otpLogEnabled:', electionSettings.otpLogEnabled);
+    console.log('Full settings:', JSON.stringify(electionSettings, null, 2));
+    
+    const message = electionSettings.otpDashboardOnly
+      ? 'OTP telah dibuat. Silakan hubungi admin untuk mendapatkan kode OTP.'
+      : 'OTP terkirim ke email Anda';
+    
+    console.log('Final message:', message);
+    
+    const response = NextResponse.json({ success: true, message });
     
     // Set cookie (will automatically overwrite old one with same name)
     response.cookies.set('otp_email', signedEmail, {

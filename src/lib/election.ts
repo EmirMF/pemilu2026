@@ -6,18 +6,12 @@ const CACHE_KEY = 'election:settings'
 const CACHE_TTL = 30 // 30 seconds
 
 export async function getElectionSettings() {
-  // Use cache with 30 second TTL
-  return getCacheOrSet(
-    CACHE_KEY,
-    async () => {
-      return prisma.electionSettings.upsert({
-        where: { key: ELECTION_SETTINGS_KEY },
-        update: {},
-        create: { key: ELECTION_SETTINGS_KEY, isOpen: true, otpEnabled: true },
-      })
-    },
-    { ttl: CACHE_TTL }
-  )
+  // Direct database query without caching for real-time settings
+  return prisma.electionSettings.upsert({
+    where: { key: ELECTION_SETTINGS_KEY },
+    update: {},
+    create: { key: ELECTION_SETTINGS_KEY, isOpen: true, otpEnabled: true },
+  })
 }
 
 export async function invalidateElectionSettingsCache() {

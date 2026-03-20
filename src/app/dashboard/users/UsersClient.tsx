@@ -30,6 +30,8 @@ export default function UsersClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState("");
+  const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
 
   const fetchUsers = async () => {
     try {
@@ -267,6 +269,127 @@ export default function UsersClient() {
     setEditingName("");
   };
 
+  const toggleSelectUser = (userId: string) => {
+    const newSelected = new Set(selectedUsers);
+    if (newSelected.has(userId)) {
+      newSelected.delete(userId);
+    } else {
+      newSelected.add(userId);
+    }
+    setSelectedUsers(newSelected);
+  };
+
+  const toggleSelectAll = () => {
+    // Get selectable users (exclude current user)
+    const selectableUsers = filteredAndSortedUsers.filter(u => u.nim !== currentUserNim);
+    
+    if (selectedUsers.size === selectableUsers.length) {
+      setSelectedUsers(new Set());
+    } else {
+      setSelectedUsers(new Set(selectableUsers.map(u => u.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUsers.size === 0) return;
+    if (!confirm(`Yakin ingin menghapus ${selectedUsers.size} user yang dipilih?`)) return;
+
+    setBulkActionLoading(true);
+    try {
+      const promises = Array.from(selectedUsers).map(id =>
+        fetch(`/api/settings/users/${id}`, { method: 'DELETE' })
+      );
+      await Promise.all(promises);
+      setSelectedUsers(new Set());
+      fetchUsers();
+    } catch (error) {
+      console.error('Error bulk deleting:', error);
+      alert('Terjadi kesalahan saat menghapus user');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkToggleAdmin = async (makeAdmin: boolean) => {
+    if (selectedUsers.size === 0) return;
+    if (!confirm(`Yakin ingin ${makeAdmin ? 'jadikan admin' : 'hapus admin'} ${selectedUsers.size} user yang dipilih?`)) return;
+
+    setBulkActionLoading(true);
+    try {
+      const selectedNims = users.filter(u => selectedUsers.has(u.id)).map(u => u.nim);
+      const promises = selectedNims.map(nim =>
+        fetch('/api/settings/users/admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nim, isAdmin: makeAdmin }),
+        })
+      );
+      await Promise.all(promises);
+      setSelectedUsers(new Set());
+      fetchUsers();
+    } catch (error) {
+      console.error('Error bulk toggling admin:', error);
+      alert('Terjadi kesalahan saat mengubah status admin');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkToggleDPT = async (addToDPT: boolean) => {
+    if (selectedUsers.size === 0) return;
+    if (!confirm(`Yakin ingin ${addToDPT ? 'tambahkan ke' : 'hapus dari'} DPT ${selectedUsers.size} user yang dipilih?`)) return;
+
+    setBulkActionLoading(true);
+    try {
+      const selectedNims = users.filter(u => selectedUsers.has(u.id)).map(u => u.nim);
+      const promises = selectedNims.map(nim =>
+        fetch('/api/settings/users/dpt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nim, isInDPT: addToDPT }),
+        })
+      );
+      await Promise.all(promises);
+      setSelectedUsers(new Set());
+      fetchUsers();
+    } catch (error) {
+      console.error('Error bulk toggling DPT:', error);
+      alert('Terjadi kesalahan saat mengubah status DPT');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
+  const handleBulkResetPassword = async () => {
+    if (selectedUsers.size === 0) return;
+    if (!confirm(`Yakin ingin reset password ${selectedUsers.size} user yang dipilih? Password akan dihapus dan user harus set password baru.`)) return;
+
+    setBulkActionLoading(true);
+    try {
+      const selectedNims = users.filter(u => selectedUsers.has(u.id) && !u.isAdmin).map(u => u.nim);
+      if (selectedNims.length === 0) {
+        alert('Tidak ada user non-admin yang dipilih');
+        return;
+      }
+      const promises = selectedNims.map(nim =>
+        fetch('/api/settings/users/reset-password', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nim }),
+        })
+      );
+      await Promise.all(promises);
+      alert(`Berhasil reset password ${selectedNims.length} user`);
+      setSelectedUsers(new Set());
+      fetchUsers();
+    } catch (error) {
+      console.error('Error bulk resetting password:', error);
+      alert('Terjadi kesalahan saat reset password');
+    } finally {
+      setBulkActionLoading(false);
+    }
+  };
+
   const filteredAndSortedUsers = useMemo(() => {
     let filtered = users.filter(user =>
       user.nim.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -374,6 +497,11 @@ export default function UsersClient() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <h3 className="text-lg lg:text-xl font-semibold text-neutral-800 dark:text-neutral-100">
             Daftar User ({filteredAndSortedUsers.length})
+            {selectedUsers.size > 0 && (
+              <span className="ml-2 text-sm font-normal text-secondary-600 dark:text-secondary-400">
+                ({selectedUsers.size} dipilih)
+              </span>
+            )}
           </h3>
           <div className="relative w-full sm:w-auto">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400" size={18} />
@@ -386,6 +514,70 @@ export default function UsersClient() {
             />
           </div>
         </div>
+
+        {/* Bulk Actions */}
+        {selectedUsers.size > 0 && (
+          <div className="mb-4 p-3 bg-secondary-50 dark:bg-secondary-900/20 border border-secondary-200 dark:border-secondary-800 rounded-lg flex flex-wrap items-center gap-2">
+            <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+              Aksi untuk {selectedUsers.size} user:
+            </span>
+            <button
+              onClick={() => handleBulkToggleAdmin(true)}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50 flex items-center gap-1 text-sm transition-colors"
+            >
+              <Shield size={14} />
+              Jadikan Admin
+            </button>
+            <button
+              onClick={() => handleBulkToggleAdmin(false)}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-neutral-500 text-white rounded-lg hover:bg-neutral-600 disabled:opacity-50 flex items-center gap-1 text-sm transition-colors"
+            >
+              <ShieldOff size={14} />
+              Hapus Admin
+            </button>
+            <button
+              onClick={() => handleBulkToggleDPT(true)}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50 flex items-center gap-1 text-sm transition-colors"
+            >
+              <CheckCircle size={14} />
+              Tambah ke DPT
+            </button>
+            <button
+              onClick={() => handleBulkToggleDPT(false)}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 disabled:opacity-50 flex items-center gap-1 text-sm transition-colors"
+            >
+              <XCircle size={14} />
+              Hapus dari DPT
+            </button>
+            <button
+              onClick={handleBulkResetPassword}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 flex items-center gap-1 text-sm transition-colors"
+            >
+              <KeyRound size={14} />
+              Reset Password
+            </button>
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkActionLoading}
+              className="px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 flex items-center gap-1 text-sm transition-colors"
+            >
+              <Trash2 size={14} />
+              Hapus
+            </button>
+            <button
+              onClick={() => setSelectedUsers(new Set())}
+              disabled={bulkActionLoading}
+              className="ml-auto px-3 py-1.5 bg-neutral-200 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg hover:bg-neutral-300 dark:hover:bg-neutral-600 disabled:opacity-50 text-sm transition-colors"
+            >
+              Batal
+            </button>
+          </div>
+        )}
         
         {filteredAndSortedUsers.length === 0 ? (
           <p className="text-neutral-500 dark:text-neutral-400 text-center py-8 text-sm lg:text-base">
@@ -396,6 +588,17 @@ export default function UsersClient() {
             <table className="w-full min-w-[640px]">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-700">
+                  <th className="text-center py-3 px-2 w-10">
+                    <input
+                      type="checkbox"
+                      checked={
+                        filteredAndSortedUsers.filter(u => u.nim !== currentUserNim).length > 0 &&
+                        selectedUsers.size === filteredAndSortedUsers.filter(u => u.nim !== currentUserNim).length
+                      }
+                      onChange={toggleSelectAll}
+                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-secondary-600 focus:ring-secondary-500"
+                    />
+                  </th>
                   <th className="text-left py-3 px-4 text-xs lg:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                     <button
                       onClick={() => handleSort('nim')}
@@ -441,6 +644,15 @@ export default function UsersClient() {
               <tbody>
                 {filteredAndSortedUsers.map((user) => (
                   <tr key={user.id} className="border-b border-neutral-100 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800">
+                    <td className="py-3 px-2 text-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedUsers.has(user.id)}
+                        onChange={() => toggleSelectUser(user.id)}
+                        disabled={user.nim === currentUserNim}
+                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-secondary-600 focus:ring-secondary-500 disabled:opacity-30"
+                      />
+                    </td>
                     <td className="py-3 px-4 text-xs lg:text-sm text-neutral-900 dark:text-neutral-100 font-medium">{user.nim}</td>
                     <td className="py-3 px-4 text-xs lg:text-sm text-neutral-600 dark:text-neutral-400">
                       {editingUserId === user.id ? (

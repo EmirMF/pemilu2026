@@ -137,7 +137,7 @@ export default function LoginPage() {
       const otpData = await otpRes.json();
 
       if (otpRes.ok) {
-        setMessage('Kode OTP telah dikirim ke email Anda');
+        setMessage(otpData.message || 'Kode OTP telah dikirim ke email Anda');
         setStep('otp');
       } else {
         setError(otpData.error || 'Gagal mengirim OTP');
@@ -202,7 +202,7 @@ export default function LoginPage() {
       const otpData = await otpRes.json();
 
       if (otpRes.ok) {
-        setMessage('Kode OTP untuk reset password telah dikirim ke email Anda');
+        setMessage(otpData.message || 'Kode OTP untuk reset password telah dikirim ke email Anda');
         setStep('otp');
       } else {
         setError(otpData.error || 'Gagal mengirim OTP');

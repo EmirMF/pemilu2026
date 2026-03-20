@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart3, LayoutDashboard, Users, UserSquare2, Settings, LogOut, UserCog, Menu, X, FileText } from 'lucide-react';
+import { BarChart3, LayoutDashboard, Users, UserSquare2, Settings, LogOut, UserCog, Menu, X, FileText, Key } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
 import ThemeToggle from './ThemeToggle';
@@ -17,6 +17,7 @@ export default function Sidebar() {
     { name: 'Data Pemilih', icon: Users, href: '/dashboard/voters' },
     { name: 'Kandidat', icon: UserSquare2, href: '/dashboard/candidates' },
     { name: 'Manajemen User', icon: UserCog, href: '/dashboard/users' },
+    { name: 'OTP Logs', icon: Key, href: '/dashboard/otp-logs' },
     { name: 'Audit Trail', icon: FileText, href: '/dashboard/audit' },
     { name: 'Pengaturan', icon: Settings, href: '/dashboard/settings' },
   ];
