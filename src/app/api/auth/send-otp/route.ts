@@ -27,10 +27,10 @@ export async function POST(request: Request) {
     }
 
     // Check if election is open
-    const electionSettings = await getElectionSettings();
+    /* const electionSettings = await getElectionSettings();
     if (!electionSettings.isOpen) {
       return NextResponse.json({ error: 'Pemilihan sedang ditutup.' }, { status: 403 });
-    }
+    } */
 
     // Check if OTP is enabled
     if (electionSettings.otpEnabled === false) {
