@@ -11,6 +11,7 @@ type DPTModalProps = {
 
 type Whitelist = {
   nim: string
+  name?: string | null
 }
 
 export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
@@ -79,7 +80,7 @@ export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">Daftar Pemilih Tetap</h3>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Total: {whitelists.length} NIM</p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Total: {whitelists.length} User</p>
                   </div>
                 </div>
                 <button
@@ -97,7 +98,7 @@ export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
                 <Search size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-400" />
                 <input
                   type="text"
-                  placeholder="Cari NIM..."
+                  placeholder="Cari NIM atau Nama..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-12 pr-4 py-3 bg-cream-50 dark:bg-neutral-800 border border-primary-300 dark:border-neutral-600 rounded-xl text-neutral-900 dark:text-neutral-50 placeholder-neutral-400 focus:outline-none focus:border-secondary-500 transition"
@@ -129,6 +130,9 @@ export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
                       transition={{ duration: 0.2, delay: index * 0.01 }}
                     >
                       <div className="text-neutral-900 dark:text-neutral-50 font-mono font-medium">{item.nim}</div>
+                      {item.name && (
+                        <div className="text-sm text-neutral-600 dark:text-neutral-400 mt-1">{item.name}</div>
+                      )}
                     </motion.div>
                   ))}
                 </div>

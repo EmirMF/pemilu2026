@@ -6,19 +6,33 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const search = url.searchParams.get('search') || ''
 
-    const whereClause = search
-      ? {
+    const whereClause: any = {
+      isInDPT: true, // Only show users who are in DPT
+    }
+
+    if (search) {
+      // Search by NIM or name
+      whereClause.OR = [
+        {
           nim: {
             contains: search,
           },
-        }
-      : {}
+        },
+        {
+          name: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ]
+    }
 
     const whitelists = await prisma.whitelist.findMany({
       where: whereClause,
       orderBy: { nim: 'asc' },
       select: {
         nim: true,
+        name: true,
       },
     })
 
