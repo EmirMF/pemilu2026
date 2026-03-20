@@ -1,13 +1,27 @@
 import prisma from '@/lib/prisma'
+import { getCacheOrSet, deleteCache } from '@/lib/cache'
 
 const ELECTION_SETTINGS_KEY = 'main'
+const CACHE_KEY = 'election:settings'
+const CACHE_TTL = 30 // 30 seconds
 
 export async function getElectionSettings() {
-  return prisma.electionSettings.upsert({
-    where: { key: ELECTION_SETTINGS_KEY },
-    update: {},
-    create: { key: ELECTION_SETTINGS_KEY, isOpen: true, otpEnabled: true },
-  })
+  // Use cache with 30 second TTL
+  return getCacheOrSet(
+    CACHE_KEY,
+    async () => {
+      return prisma.electionSettings.upsert({
+        where: { key: ELECTION_SETTINGS_KEY },
+        update: {},
+        create: { key: ELECTION_SETTINGS_KEY, isOpen: true, otpEnabled: true },
+      })
+    },
+    { ttl: CACHE_TTL }
+  )
+}
+
+export async function invalidateElectionSettingsCache() {
+  await deleteCache(CACHE_KEY)
 }
 
 export async function setElectionOpen(
@@ -35,7 +49,7 @@ export async function setElectionOpen(
     updateData.bgGradientTo = bgGradientTo
   }
   
-  return prisma.electionSettings.upsert({
+  const result = await prisma.electionSettings.upsert({
     where: { key: ELECTION_SETTINGS_KEY },
     update: updateData,
     create: {
@@ -48,5 +62,10 @@ export async function setElectionOpen(
       bgGradientTo: bgGradientTo || '#FFE6B3',
     },
   })
+  
+  // Invalidate cache after update
+  await invalidateElectionSettingsCache()
+  
+  return result
 }
 

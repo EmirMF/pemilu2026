@@ -361,10 +361,10 @@ export default function LoginPage() {
                     value={nim}
                     onChange={(e) => setNim(e.target.value.replace(/[^0-9]/g, ''))}
                     placeholder="NIM"
-                    className="w-full px-4 py-3 pr-52 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
+                    className="w-full px-4 py-3 pr-[9rem] sm:pr-52 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200"
                     required
                   />
-                  <div className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400 pointer-events-none">
+                  <div className="absolute right-4 sm:right-4 top-1/2 -translate-y-1/2 text-neutral-500 dark:text-neutral-400 pointer-events-none text-[0.8rem] sm:text-sm whitespace-nowrap">
                     @mahasiswa.itb.ac.id
                   </div>
                 </div>

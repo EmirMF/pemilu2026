@@ -9,6 +9,7 @@ import TimelineSettings from './TimelineSettings';
 import PublishPasswordSettings from './PublishPasswordSettings';
 import OTPSettings from './OTPSettings';
 import BadgeVisibilitySettings from './BadgeVisibilitySettings';
+import TestModeSettings from './TestModeSettings';
 
 interface AccordionItemProps {
   title: string;
@@ -103,6 +104,15 @@ export default function SettingsPage() {
           onToggle={() => toggleSection('otp')}
         >
           <OTPSettings />
+        </AccordionItem>
+
+        <AccordionItem
+          title="Test Mode"
+          description="Atur mode testing untuk pengiriman OTP (default: ON untuk keamanan)"
+          isOpen={openSection === 'testMode'}
+          onToggle={() => toggleSection('testMode')}
+        >
+          <TestModeSettings />
         </AccordionItem>
 
         <AccordionItem

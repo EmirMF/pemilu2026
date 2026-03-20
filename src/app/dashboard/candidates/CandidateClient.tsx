@@ -196,7 +196,7 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-neutral-800 dark:text-neutral-100">{candidate.name}</h3>
-                    <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">{ } Suara</p>
+                    {/* <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">{ } Suara</p> */}
                   </div>
                 </div>
               </div>

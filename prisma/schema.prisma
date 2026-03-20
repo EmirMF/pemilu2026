@@ -16,6 +16,8 @@ model Voter {
   hasVoted  Boolean   @default(false)
   votedAt   DateTime?
   createdAt DateTime  @default(now())
+  
+  @@index([hasVoted])
 }
 
 model Admin {
@@ -43,6 +45,9 @@ model VoteRecord {
   createdAt   DateTime @default(now())
 
   candidate Candidate @relation(fields: [candidateId], references: [id])
+  
+  @@index([candidateId])
+  @@index([createdAt])
 }
 
 model Whitelist {
@@ -51,6 +56,8 @@ model Whitelist {
   name      String?  // Nama lengkap
   isInDPT   Boolean  @default(false) // true = bisa vote, false = hanya bisa login
   createdAt DateTime @default(now())
+  
+  @@index([isInDPT])
 }
 
 model ElectionSettings {
@@ -71,6 +78,8 @@ model ElectionSettings {
   timelineEvents    String?   // JSON string of timeline events [{date, title}]
   publishPassword   String?   // Hashed password for publishing results
   otpEnabled        Boolean   @default(true) // Enable/disable OTP authentication
+  testMode          Boolean   @default(true) // Enable/disable test mode (default true for safety)
+  testEmail         String?   // Test email for test mode
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 }

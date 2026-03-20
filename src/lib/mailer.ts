@@ -1,16 +1,33 @@
 import nodemailer from 'nodemailer';
+import prisma from '@/lib/prisma';
 
 // Email provider configuration - fallback order: gmail -> brevo
 const EMAIL_PROVIDER = process.env.EMAIL_PROVIDER || 'gmail'; // 'gmail' or 'brevo'
 
-// TEST MODE: Override email untuk testing
-const TEST_MODE = process.env.TEST_MODE === 'true';
-const TEST_EMAIL = process.env.TEST_EMAIL || '18224066@mahasiswa.itb.ac.id';
+// Helper function to get test mode settings from database
+async function getTestModeSettings() {
+  try {
+    const settings = await prisma.electionSettings.findFirst({
+      where: { key: 'main' },
+    }) as any;
+    return {
+      testMode: settings?.testMode ?? true, // Default true for safety
+      testEmail: settings?.testEmail || '18224066@mahasiswa.itb.ac.id',
+    };
+  } catch (error) {
+    console.error('Error fetching test mode settings:', error);
+    // Fallback to safe defaults
+    return {
+      testMode: true,
+      testEmail: '18224066@mahasiswa.itb.ac.id',
+    };
+  }
+}
 
 /**
  * Send OTP email via Brevo (formerly Sendinblue)
  */
-async function sendViaBrevo(targetEmail: string, otpCode: string, originalEmail: string) {
+async function sendViaBrevo(targetEmail: string, otpCode: string, originalEmail: string, testMode: boolean) {
   const emailData = {
     sender: {
       name: 'Pemilu 8EH Radio ITB 2026',
@@ -18,13 +35,13 @@ async function sendViaBrevo(targetEmail: string, otpCode: string, originalEmail:
     },
     to: [{ email: targetEmail }],
     subject: 'Kode OTP - Pemilu App',
-    textContent: `Kode OTP Anda adalah: ${otpCode}. Kode ini berlaku selama 10 menit.${TEST_MODE ? `\n\n[TEST MODE] Email asli: ${originalEmail}` : ''}`,
+    textContent: `Kode OTP Anda adalah: ${otpCode}. Kode ini berlaku selama 10 menit.${testMode ? `\n\n[TEST MODE] Email asli: ${originalEmail}` : ''}`,
     htmlContent: `
       <div style="font-family: sans-serif; padding: 20px;">
         <h2>Verifikasi Login</h2>
         <p>Kode OTP Anda adalah: <strong>${otpCode}</strong></p>
         <p>Kode ini berlaku selama 10 menit. Jangan berikan kode ini kepada siapapun.</p>
-        ${TEST_MODE ? `<p style="color: #666; font-size: 12px; margin-top: 20px;">[TEST MODE] Email tujuan asli: ${originalEmail}</p>` : ''}
+        ${testMode ? `<p style="color: #666; font-size: 12px; margin-top: 20px;">[TEST MODE] Email tujuan asli: ${originalEmail}</p>` : ''}
       </div>
     `
   };
@@ -52,7 +69,7 @@ async function sendViaBrevo(targetEmail: string, otpCode: string, originalEmail:
 /**
  * Send OTP email via Gmail (using nodemailer)
  */
-async function sendViaGmail(targetEmail: string, otpCode: string, originalEmail: string) {
+async function sendViaGmail(targetEmail: string, otpCode: string, originalEmail: string, testMode: boolean) {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -68,13 +85,13 @@ async function sendViaGmail(targetEmail: string, otpCode: string, originalEmail:
     },
     to: targetEmail,
     subject: 'Kode OTP - Pemilu App',
-    text: `Kode OTP Anda adalah: ${otpCode}. Kode ini berlaku selama 10 menit.${TEST_MODE ? `\n\n[TEST MODE] Email asli: ${originalEmail}` : ''}`,
+    text: `Kode OTP Anda adalah: ${otpCode}. Kode ini berlaku selama 10 menit.${testMode ? `\n\n[TEST MODE] Email asli: ${originalEmail}` : ''}`,
     html: `
       <div style="font-family: sans-serif; padding: 20px;">
         <h2>Verifikasi Login</h2>
         <p>Kode OTP Anda adalah: <strong>${otpCode}</strong></p>
         <p>Kode ini berlaku selama 10 menit. Jangan berikan kode ini kepada siapapun.</p>
-        ${TEST_MODE ? `<p style="color: #666; font-size: 12px; margin-top: 20px;">[TEST MODE] Email tujuan asli: ${originalEmail}</p>` : ''}
+        ${testMode ? `<p style="color: #666; font-size: 12px; margin-top: 20px;">[TEST MODE] Email tujuan asli: ${originalEmail}</p>` : ''}
       </div>
     `
   };
@@ -89,8 +106,11 @@ async function sendViaGmail(targetEmail: string, otpCode: string, originalEmail:
  * Fallback order: Gmail -> Brevo
  */
 export const sendOTPContent = async (email: string, otpCode: string) => {
+  // Get test mode settings from database
+  const { testMode, testEmail } = await getTestModeSettings();
+  
   // Override email jika dalam test mode
-  const targetEmail = TEST_MODE ? TEST_EMAIL : email;
+  const targetEmail = testMode ? testEmail : email;
   
   const providers = ['gmail', 'brevo'];
   let lastError: Error | null = null;
@@ -102,19 +122,19 @@ export const sendOTPContent = async (email: string, otpCode: string) => {
       switch (provider.toLowerCase()) {
         case 'gmail':
           console.log('Trying Gmail as email provider');
-          result = await sendViaGmail(targetEmail, otpCode, email);
+          result = await sendViaGmail(targetEmail, otpCode, email, testMode);
           break;
           
         case 'brevo':
           console.log('Trying Brevo as email provider');
-          result = await sendViaBrevo(targetEmail, otpCode, email);
+          result = await sendViaBrevo(targetEmail, otpCode, email, testMode);
           break;
           
         default:
           continue;
       }
       
-      if (TEST_MODE) {
+      if (testMode) {
         console.log(`[TEST MODE] Original recipient: ${email}`);
       }
       
