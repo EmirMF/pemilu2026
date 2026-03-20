@@ -17,16 +17,17 @@ const tataCara: AccordionItem[] = [
     id: 1,
     title: 'Langkah 1 - Login',
     content: [
-      'Klik tombol "Vote Sekarang" di halaman utama',
-      'Masukkan NIM Anda',
-      'Masukkan password yang telah Anda buat',
-      'Klik "Login"',
+      'Masukkan NIM Anda (tanpa @mahasiswa.itb.ac.id)',
+      'Klik "Lanjutkan"',
+      'Jika pertama kali login: verifikasi dengan OTP yang dikirim ke email, lalu buat password baru',
+      'Jika sudah pernah login: masukkan password Anda dan klik "Login"',
     ],
   },
   {
     id: 2,
     title: 'Langkah 2 - Pilih Kandidat',
     content: [
+      'Klik tombol "Vote Sekarang" di halaman utama',
       'Baca visi misi setiap kandidat dengan seksama',
       'Klik card kandidat pilihan Anda',
       'Pastikan kandidat yang dipilih sudah benar',
