@@ -27,8 +27,8 @@ export async function POST(request: Request) {
     }
 
     // Check if election is open
-    /* const electionSettings = await getElectionSettings();
-    if (!electionSettings.isOpen) {
+     const electionSettings = await getElectionSettings();
+    /* if (!electionSettings.isOpen) {
       return NextResponse.json({ error: 'Pemilihan sedang ditutup.' }, { status: 403 });
     } */
 
