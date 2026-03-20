@@ -11,7 +11,7 @@ function isVoteButtonState(value: unknown): value is VoteButtonState {
 
 function formatElectionSettings(settings: {
   isOpen: boolean
-  countdownEnd: Date | null
+  countdownEnd: Date | string | null
   countdownType: string | null
   bgGradientFrom: string | null
   bgGradientVia: string | null
@@ -21,11 +21,15 @@ function formatElectionSettings(settings: {
   showUserVoteStatus?: boolean | null
   voteButtonState?: string | null
   otpEnabled?: boolean | null
-  updatedAt: Date
+  updatedAt: Date | string
 }) {
   return {
     isOpen: settings.isOpen,
-    countdownEnd: settings.countdownEnd ? settings.countdownEnd.toISOString() : null,
+    countdownEnd: settings.countdownEnd
+      ? (settings.countdownEnd instanceof Date
+          ? settings.countdownEnd.toISOString()
+          : settings.countdownEnd)
+      : null,
     countdownType: settings.countdownType || 'end',
     bgGradientFrom: settings.bgGradientFrom || '#FFC300',
     bgGradientVia: settings.bgGradientVia || '#FF8040',
@@ -35,7 +39,7 @@ function formatElectionSettings(settings: {
     showUserVoteStatus: settings.showUserVoteStatus ?? true,
     voteButtonState: isVoteButtonState(settings.voteButtonState) ? settings.voteButtonState : 'default',
     otpEnabled: settings.otpEnabled ?? false,
-    updatedAt: settings.updatedAt,
+    updatedAt: settings.updatedAt instanceof Date ? settings.updatedAt : new Date(settings.updatedAt),
   }
 }
 
@@ -45,7 +49,11 @@ export async function GET() {
     return NextResponse.json(formatElectionSettings(settings))
   } catch (error) {
     console.error('Error fetching election settings:', error)
-    return NextResponse.json({ error: 'Terjadi kesalahan server.' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Terjadi kesalahan server.'
+    return NextResponse.json({
+      error: 'Gagal mengambil status pemilihan.',
+      details: errorMessage
+    }, { status: 500 })
   }
 }
 

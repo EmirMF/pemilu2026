@@ -38,7 +38,10 @@ export default function ElectionStatusSettings() {
     setError(null)
     try {
       const res = await fetch('/api/settings/election', { cache: 'no-store' })
-      if (!res.ok) throw new Error('Gagal mengambil status pemilihan.')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || errorData.details || 'Gagal mengambil status pemilihan.')
+      }
       const json = (await res.json()) as ElectionSettings
       setData(json)
       if (json.countdownEnd) {
@@ -48,6 +51,7 @@ export default function ElectionStatusSettings() {
       }
       setCountdownType((json.countdownType as 'start' | 'end') || 'end')
     } catch (e: any) {
+      console.error('Error loading election settings:', e)
       setError(e?.message ?? 'Terjadi kesalahan.')
     } finally {
       setLoading(false)
