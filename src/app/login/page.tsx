@@ -320,11 +320,11 @@ export default function LoginPage() {
               >
                 {loading ? 'Memproses...' : 'Lanjutkan'}
               </Button>
-              <div className="text-center mt-4">
+              {/* <div className="text-center mt-4">
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">
                   Admin? <a href="/admin" className="text-red-600 hover:text-red-700 font-medium">Login di sini</a>
                 </p>
-              </div>
+              </div> */}
             </form>
           )}
 

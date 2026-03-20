@@ -13,6 +13,7 @@ export function middleware(request: NextRequest) {
   // Public routes that don't require authentication
   const publicRoutes = [
     '/login',
+    '/admin',
     '/api/auth/send-otp',
     '/api/auth/verify-otp',
     '/api/auth/check-password',

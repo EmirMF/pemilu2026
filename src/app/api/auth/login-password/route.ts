@@ -6,16 +6,34 @@ import { rateLimit } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
   try {
-    const { email, password } = await request.json();
+    const body = await request.json();
+    const { email, password, nim: nimInput } = body;
 
-    if (!email || !password) {
+    // Support both email and nim input
+    let nim: string;
+    let email_to_use: string;
+
+    if (nimInput) {
+      // If nim is provided directly (from /admin page)
+      nim = nimInput;
+      email_to_use = `${nim}@mahasiswa.itb.ac.id`;
+    } else if (email) {
+      // If email is provided (from regular login)
+      nim = email.split('@')[0];
+      email_to_use = email;
+    } else {
       return NextResponse.json(
-        { error: "Email dan password harus diisi" },
+        { error: "NIM atau email harus diisi" },
         { status: 400 }
       );
     }
 
-    const nim = email.split('@')[0];
+    if (!password) {
+      return NextResponse.json(
+        { error: "Password harus diisi" },
+        { status: 400 }
+      );
+    }
 
     // Rate limit: 5 login attempts per minute per NIM
     const rateLimitResult = await rateLimit(`login-password:${nim}`, {
@@ -36,36 +54,22 @@ export async function POST(request: Request) {
       where: { nim },
     });
 
-    // Check if user is voter
-    const voter = await prisma.voter.findUnique({
-      where: { email },
-    });
-
-    if (!admin && !voter) {
+    if (!admin) {
       return NextResponse.json(
-        { error: "Email tidak terdaftar" },
+        { error: "NIM tidak terdaftar sebagai admin" },
         { status: 401 }
       );
     }
 
-    let isPasswordValid = false;
-    let isAdmin = false;
+    if (!admin.password) {
+      return NextResponse.json(
+        { error: "Password belum diatur untuk admin ini" },
+        { status: 401 }
+      );
+    }
 
     // Check admin password
-    if (admin && admin.password) {
-      isPasswordValid = await bcrypt.compare(password, admin.password);
-      isAdmin = true;
-    }
-    // Check voter password
-    else if (voter && (voter as any).password) {
-      isPasswordValid = await bcrypt.compare(password, (voter as any).password);
-      isAdmin = false;
-    } else {
-      return NextResponse.json(
-        { error: "Password belum diatur. Silakan login dengan OTP terlebih dahulu." },
-        { status: 401 }
-      );
-    }
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
 
     if (!isPasswordValid) {
       return NextResponse.json(
@@ -75,13 +79,13 @@ export async function POST(request: Request) {
     }
 
     // Create session cookie with email
-    const signedSession = signCookie(email);
+    const signedSession = signCookie(email_to_use);
 
     const response = NextResponse.json({
       success: true,
       message: "Login berhasil",
-      isAdmin,
-      redirectTo: "/",
+      isAdmin: true,
+      redirectTo: "/dashboard",
     });
 
     response.cookies.set("voter_session", signedSession, {
