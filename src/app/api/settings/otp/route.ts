@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { invalidateElectionSettingsCache } from '@/lib/election';
 
 export async function POST(request: Request) {
   try {
@@ -16,7 +17,10 @@ export async function POST(request: Request) {
       create: { key: 'main', otpEnabled }
     });
 
-    return NextResponse.json({ 
+    // Invalidate cache after updating settings
+    await invalidateElectionSettingsCache();
+
+    return NextResponse.json({
       success: true, 
       otpEnabled: settings.otpEnabled 
     });

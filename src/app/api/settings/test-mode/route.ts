@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { invalidateElectionSettingsCache } from '@/lib/election';
 
 // GET: Fetch test mode settings
 export async function GET() {
@@ -39,6 +40,9 @@ export async function POST(request: Request) {
         testEmail: testEmail || null,
       } as any,
     }) as any;
+
+    // Invalidate cache after updating settings
+    await invalidateElectionSettingsCache();
 
     return NextResponse.json({
       success: true,

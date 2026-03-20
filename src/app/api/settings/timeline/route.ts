@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyCookie } from '@/lib/secureCookie';
 import { createAuditLog } from '@/lib/auditLog';
+import { invalidateElectionSettingsCache } from '@/lib/election';
 
 async function checkAdminAuth() {
   const cookieStore = await cookies();
@@ -93,6 +94,9 @@ export async function PUT(request: Request) {
         timelineEvents: JSON.stringify(timelineEvents),
       },
     });
+
+    // Invalidate cache after updating settings
+    await invalidateElectionSettingsCache();
 
     await createAuditLog({
       action: 'SETTINGS_GRADIENT_CHANGED',

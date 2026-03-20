@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getElectionSettings, setElectionOpen } from '@/lib/election'
+import { getElectionSettings, setElectionOpen, invalidateElectionSettingsCache } from '@/lib/election'
 import prisma from '@/lib/prisma'
 
 const VOTE_BUTTON_STATES = ['default', 'before', 'after', 'hidden'] as const
@@ -80,6 +80,9 @@ export async function PUT(request: Request) {
         },
       })
 
+      // Invalidate cache
+      await invalidateElectionSettingsCache()
+
       return NextResponse.json(formatElectionSettings(updated))
     }
     
@@ -94,6 +97,10 @@ export async function PUT(request: Request) {
           showTotalVotes: Boolean(body.showTotalVotes),
         },
       })
+      
+      // Invalidate cache
+      await invalidateElectionSettingsCache()
+      
       return NextResponse.json(formatElectionSettings(updated))
     }
     
@@ -157,6 +164,9 @@ export async function PATCH(request: Request) {
         ...updateData,
       },
     })
+    
+    // Invalidate cache
+    await invalidateElectionSettingsCache()
     
     const result = updated as typeof updated & { showVotingStatus?: boolean; showUserVoteStatus?: boolean }
     
