@@ -15,9 +15,11 @@ model Voter {
   password  String?   // Hashed password for voter login
   hasVoted  Boolean   @default(false)
   votedAt   DateTime?
+  isInDPT   Boolean   @default(false) // true = bisa vote, false = hanya bisa login
   createdAt DateTime  @default(now())
   
   @@index([hasVoted])
+  @@index([isInDPT])
 }
 
 model Admin {
@@ -48,16 +50,6 @@ model VoteRecord {
   
   @@index([candidateId])
   @@index([createdAt])
-}
-
-model Whitelist {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  nim       String   @unique
-  name      String?  // Nama lengkap
-  isInDPT   Boolean  @default(false) // true = bisa vote, false = hanya bisa login
-  createdAt DateTime @default(now())
-  
-  @@index([isInDPT])
 }
 
 model ElectionSettings {

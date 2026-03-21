@@ -4,7 +4,9 @@ import prisma from '@/lib/prisma';
 export async function GET() {
   try {
     // Get total voters in DPT
-    const totalDPT = await prisma.whitelist.count();
+    const totalDPT = await prisma.voter.count({
+      where: { isInDPT: true }
+    });
     
     // Get total voters who have voted
     const totalVoted = await prisma.voter.count({

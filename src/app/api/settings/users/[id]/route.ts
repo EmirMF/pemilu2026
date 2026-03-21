@@ -10,38 +10,28 @@ export async function PATCH(
     const { id } = await params;
     const { name } = await request.json();
 
-    // Get the whitelist entry to find the NIM
-    const whitelist = await prisma.whitelist.findUnique({
+    // Get the voter entry to find the NIM
+    const voter = await prisma.voter.findUnique({
       where: { id }
     });
 
-    if (!whitelist) {
+    if (!voter) {
       return NextResponse.json(
         { error: 'User tidak ditemukan' },
         { status: 404 }
       );
     }
 
-    // Update whitelist
-    await prisma.whitelist.update({
+    // Update voter
+    await prisma.voter.update({
       where: { id },
       data: { name: name || null }
     });
 
-    // Update voter if exists
-    try {
-      await prisma.voter.update({
-        where: { nim: whitelist.nim },
-        data: { name: name || null }
-      });
-    } catch (e) {
-      // Voter might not exist yet
-    }
-
     // Update admin if exists
     try {
       await prisma.admin.update({
-        where: { nim: whitelist.nim },
+        where: { nim: voter.nim },
         data: { name: name || null }
       });
     } catch (e) {
@@ -58,7 +48,7 @@ export async function PATCH(
   }
 }
 
-// DELETE - Remove user from whitelist (and admin if applicable)
+// DELETE - Remove user (and admin if applicable)
 export async function DELETE(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -66,12 +56,12 @@ export async function DELETE(
   try {
     const { id } = await params;
 
-    // Get the whitelist entry to find the NIM
-    const whitelist = await prisma.whitelist.findUnique({
+    // Get the voter entry to find the NIM
+    const voter = await prisma.voter.findUnique({
       where: { id }
     });
 
-    if (!whitelist) {
+    if (!voter) {
       return NextResponse.json(
         { error: 'User tidak ditemukan' },
         { status: 404 }
@@ -81,14 +71,14 @@ export async function DELETE(
     // Delete from admin if exists
     try {
       await prisma.admin.delete({
-        where: { nim: whitelist.nim }
+        where: { nim: voter.nim }
       });
     } catch (e) {
       // Admin entry might not exist, that's okay
     }
 
-    // Delete from whitelist
-    await prisma.whitelist.delete({
+    // Delete from voter
+    await prisma.voter.delete({
       where: { id }
     });
 

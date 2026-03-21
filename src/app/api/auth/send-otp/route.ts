@@ -12,16 +12,16 @@ export async function POST(request: Request) {
   try {
     const { email } = await request.json();
 
-    // Rate limiting by email
+    // Rate limiting by email - 1 OTP request per 60 seconds
     const rateLimitResult = await rateLimit(`send-otp:${email}`, {
       interval: 60, // 1 minute
-      maxRequests: 3 // max 3 OTP requests per minute
+      maxRequests: 1 // max 1 OTP request per minute (60 second cooldown)
     });
 
     if (!rateLimitResult.success) {
       const resetIn = Math.ceil((rateLimitResult.resetAt - Date.now()) / 1000);
       return NextResponse.json(
-        { error: `Terlalu banyak permintaan. Coba lagi dalam ${resetIn} detik.` },
+        { error: `Mohon tunggu ${resetIn} detik sebelum meminta OTP lagi.` },
         { status: 429 }
       );
     }
@@ -44,12 +44,6 @@ export async function POST(request: Request) {
     }
 
     const nim = email.split('@')[0];
-
-    const isWhitelisted = await prisma.whitelist.findUnique({ where: { nim } });
-
-    if (!isWhitelisted) {
-      return NextResponse.json({ error: 'NIM tidak terdaftar di sistem' }, { status: 403 });
-    }
 
     // Check if user is admin
     const admin = await prisma.admin.findUnique({ where: { nim } }).catch(() => null);

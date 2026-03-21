@@ -27,7 +27,7 @@ export async function GET(request: Request) {
       ]
     }
 
-    const whitelists = await prisma.whitelist.findMany({
+    const voters = await prisma.voter.findMany({
       where: whereClause,
       orderBy: { nim: 'asc' },
       select: {
@@ -36,9 +36,9 @@ export async function GET(request: Request) {
       },
     })
 
-    return NextResponse.json({ whitelists })
+    return NextResponse.json({ voters })
   } catch (error) {
-    console.error('Error fetching whitelist:', error)
+    console.error('Error fetching voters:', error)
     return NextResponse.json({ error: 'Terjadi kesalahan server.' }, { status: 500 })
   }
 }

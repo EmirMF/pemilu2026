@@ -37,19 +37,20 @@ export async function POST(request: Request) {
     
     for (const voter of validVoters) {
       try {
-        await prisma.whitelist.upsert({
+        await prisma.voter.upsert({
           where: { nim: voter.nim },
           update: { 
             name: voter.name || null 
           },
           create: {
             nim: voter.nim,
-            name: voter.name || null
+            name: voter.name || null,
+            email: `${voter.nim}@mahasiswa.itb.ac.id`
           }
         });
         
         // Check if it was an update or create
-        const existing = await prisma.whitelist.findUnique({
+        const existing = await prisma.voter.findUnique({
           where: { nim: voter.nim }
         });
         

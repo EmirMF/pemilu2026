@@ -11,9 +11,6 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'NIM required' }, { status: 400 });
     }
 
-    // Check whitelist
-    const whitelist = await prisma.whitelist.findUnique({ where: { nim } });
-    
     // Check admin
     const admin = await prisma.admin.findUnique({ where: { nim } });
     
@@ -22,11 +19,10 @@ export async function GET(request: Request) {
 
     return NextResponse.json({
       nim,
-      inWhitelist: !!whitelist,
       isAdmin: !!admin,
       hasVoted: voter?.hasVoted || false,
+      isInDPT: voter?.isInDPT || false,
       adminData: admin,
-      whitelistData: whitelist,
       voterData: voter
     });
   } catch (error) {

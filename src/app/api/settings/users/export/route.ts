@@ -3,30 +3,14 @@ import prisma from '@/lib/prisma';
 
 export async function GET() {
   try {
-    const whitelists = await prisma.whitelist.findMany({
+    const voters = await prisma.voter.findMany({
       orderBy: { createdAt: 'desc' }
     });
 
-    // Get voter data for each whitelist entry
-    const users = await Promise.all(
-      whitelists.map(async (whitelist) => {
-        const voter = await prisma.voter.findUnique({
-          where: { nim: whitelist.nim }
-        });
-
-        return {
-          nim: whitelist.nim,
-          name: (whitelist as any).name || voter?.name || '',
-          email: voter?.email || `${whitelist.nim}@mahasiswa.itb.ac.id`,
-          isInDPT: (whitelist as any).isInDPT ? 'Ya' : 'Tidak'
-        };
-      })
-    );
-
     // Create CSV content
     const csvHeader = 'NIM,Nama,Email,DPT\n';
-    const csvRows = users.map(user => 
-      `${user.nim},"${user.name}",${user.email},${user.isInDPT}`
+    const csvRows = voters.map(voter => 
+      `${voter.nim},"${voter.name || ''}",${voter.email},${voter.isInDPT ? 'Ya' : 'Tidak'}`
     ).join('\n');
     
     const csv = csvHeader + csvRows;
@@ -99,30 +83,18 @@ export async function POST(request: Request) {
       }
 
       try {
-        // Upsert voter
+        // Upsert voter with isInDPT
         await prisma.voter.upsert({
           where: { nim: trimmedNim },
           update: {
             name: trimmedName || null,
             email: trimmedEmail,
-          },
-          create: {
-            nim: trimmedNim,
-            name: trimmedName || null,
-            email: trimmedEmail,
-          },
-        });
-
-        // Upsert whitelist with isInDPT
-        await prisma.whitelist.upsert({
-          where: { nim: trimmedNim },
-          update: {
-            name: trimmedName || null,
             isInDPT: isInDPT,
           },
           create: {
             nim: trimmedNim,
             name: trimmedName || null,
+            email: trimmedEmail,
             isInDPT: isInDPT,
           },
         });

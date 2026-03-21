@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Plus, Trash2, Check, X } from "lucide-react";
 
-interface Whitelist {
+interface Voter {
   id: string;
   nim: string;
   name?: string;
@@ -12,25 +12,25 @@ interface Whitelist {
 }
 
 export default function WhitelistSettings() {
-  const [whitelists, setWhitelists] = useState<Whitelist[]>([]);
+  const [voters, setVoters] = useState<Voter[]>([]);
   const [newNim, setNewNim] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const fetchWhitelists = async () => {
+  const fetchVoters = async () => {
     try {
       const res = await fetch("/api/settings/whitelist");
       if (res.ok) {
         const data = await res.json();
-        setWhitelists(data);
+        setVoters(data);
       }
     } catch (err) {
-      console.error("Gagal mengambil data whitelist", err);
+      console.error("Gagal mengambil data voters", err);
     }
   };
 
   useEffect(() => {
-    fetchWhitelists();
+    fetchVoters();
   }, []);
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -49,7 +49,7 @@ export default function WhitelistSettings() {
 
       if (res.ok) {
         setNewNim("");
-        fetchWhitelists();
+        fetchVoters();
       } else {
         const data = await res.json();
         setError(data.error || "Gagal menambahkan NIM");
@@ -62,7 +62,7 @@ export default function WhitelistSettings() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Hapus NIM ini dari whitelist?")) return;
+    if (!confirm("Hapus NIM ini?")) return;
 
     try {
       const res = await fetch(`/api/settings/whitelist/${id}`, {
@@ -70,7 +70,7 @@ export default function WhitelistSettings() {
       });
 
       if (res.ok) {
-        setWhitelists(whitelists.filter((w) => w.id !== id));
+        setVoters(voters.filter((v) => v.id !== id));
       }
     } catch (err) {
       console.error("Gagal menghapus NIM", err);
@@ -86,7 +86,7 @@ export default function WhitelistSettings() {
       });
 
       if (res.ok) {
-        fetchWhitelists();
+        fetchVoters();
       }
     } catch (err) {
       console.error("Gagal mengubah status DPT", err);
@@ -133,14 +133,14 @@ export default function WhitelistSettings() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {whitelists.length === 0 ? (
+            {voters.length === 0 ? (
               <tr>
                 <td colSpan={5} className="px-6 py-8 text-center text-neutral-500 dark:text-neutral-400">
-                  Belum ada data whitelist.
+                  Belum ada data voter.
                 </td>
               </tr>
             ) : (
-              whitelists.map((item) => (
+              voters.map((item) => (
                 <tr key={item.id} className="hover:bg-neutral-50 dark:bg-neutral-800 transition-colors">
                   <td className="px-6 py-4 font-medium text-neutral-900 dark:text-neutral-100">{item.nim}</td>
                   <td className="px-6 py-4 text-neutral-600 dark:text-neutral-400">{item.name || '-'}</td>

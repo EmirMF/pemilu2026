@@ -31,8 +31,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'NIM dan status DPT diperlukan' }, { status: 400 });
     }
 
-    // Update whitelist entry
-    await prisma.whitelist.update({
+    // Update voter entry
+    await prisma.voter.update({
       where: { nim },
       data: { isInDPT }
     });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     console.error('Error updating DPT status:', error);
     
     if (error.code === 'P2025') {
-      return NextResponse.json({ error: 'User tidak ditemukan di whitelist' }, { status: 404 });
+      return NextResponse.json({ error: 'User tidak ditemukan' }, { status: 404 });
     }
     
     return NextResponse.json({ error: 'Terjadi kesalahan server' }, { status: 500 });

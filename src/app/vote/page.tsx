@@ -42,9 +42,9 @@ export default async function VotePage() {
   const nim = email.split('@')[0];
   
   // Check if user is in DPT
-  const whitelistEntry = await prisma.whitelist.findUnique({ where: { nim } });
+  const voter = await prisma.voter.findUnique({ where: { nim } });
   
-  if (!whitelistEntry || !(whitelistEntry as any).isInDPT) {
+  if (!voter || !voter.isInDPT) {
     return (
       <>
         <GradientBackground />
@@ -67,8 +67,6 @@ export default async function VotePage() {
   // Check if user is admin
   const admin = await prisma.admin.findUnique({ where: { nim } }).catch(() => null);
   const isAdmin = !!admin;
-
-  const voter = await prisma.voter.findUnique({ where: { nim } });
 
   // If user has voted
   if (voter?.hasVoted) {

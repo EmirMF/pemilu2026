@@ -9,13 +9,13 @@ type DPTModalProps = {
   onClose: () => void
 }
 
-type Whitelist = {
+type Voter = {
   nim: string
   name?: string | null
 }
 
 export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
-  const [whitelists, setWhitelists] = useState<Whitelist[]>([])
+  const [voters, setVoters] = useState<Voter[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -33,7 +33,7 @@ export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
   useEffect(() => {
     if (!isOpen) return
 
-    const fetchWhitelist = async () => {
+    const fetchVoters = async () => {
       setLoading(true)
       try {
         const params = new URLSearchParams()
@@ -43,15 +43,15 @@ export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
         const res = await fetch(`/api/whitelist/public?${params.toString()}`)
         if (!res.ok) throw new Error('Gagal mengambil data DPT')
         const data = await res.json()
-        setWhitelists(data.whitelists || [])
+        setVoters(data.voters || [])
       } catch (error) {
-        console.error('Error fetching whitelist:', error)
+        console.error('Error fetching voters:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchWhitelist()
+    fetchVoters()
   }, [isOpen, debouncedSearch])
 
   return (
@@ -80,7 +80,7 @@ export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
                   </div>
                   <div>
                     <h3 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50">Daftar Pemilih Tetap</h3>
-                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Total: {whitelists.length} User</p>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Total: {voters.length} User</p>
                   </div>
                 </div>
                 <button
@@ -112,7 +112,7 @@ export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
                 <div className="flex items-center justify-center py-12">
                   <div className="text-neutral-600 dark:text-neutral-400">Memuat data...</div>
                 </div>
-              ) : whitelists.length === 0 ? (
+              ) : voters.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <Users size={48} className="text-neutral-300 dark:text-neutral-600 mb-4" />
                   <p className="text-neutral-600 dark:text-neutral-400">
@@ -121,7 +121,7 @@ export default function DPTModal({ isOpen, onClose }: DPTModalProps) {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {whitelists.map((item, index) => (
+                  {voters.map((item, index) => (
                     <motion.div
                       key={item.nim}
                       className="bg-cream-50 dark:bg-neutral-800 border border-primary-300 dark:border-neutral-600 rounded-xl p-4 hover:border-secondary-400 dark:hover:border-secondary-500 transition"

@@ -73,22 +73,15 @@ export async function POST(request: Request) {
     // Transaction to ensure atomic voting operation with race condition protection
     try {
       await prisma.$transaction(async (tx) => {
-        // Check if user is in DPT (whitelist with isInDPT = true)
-        const whitelistEntry = await tx.whitelist.findUnique({ where: { nim } });
-        
-        if (!whitelistEntry) {
-          throw new Error('NOT_IN_WHITELIST');
-        }
-        
-        if (!(whitelistEntry as any).isInDPT) {
-          throw new Error('NOT_IN_DPT');
-        }
-
         // Check voter exists and hasn't voted yet (inside transaction)
         const voter = await tx.voter.findUnique({ where: { nim } });
 
         if (!voter) {
           throw new Error('VOTER_NOT_FOUND');
+        }
+
+        if (!voter.isInDPT) {
+          throw new Error('NOT_IN_DPT');
         }
 
         if (voter.hasVoted) {
@@ -118,19 +111,6 @@ export async function POST(request: Request) {
       await releaseVoteLock(nim);
       
       // Handle custom errors from transaction
-      if (error.message === 'NOT_IN_WHITELIST') {
-        await createAuditLog({
-          action: 'VOTE_ATTEMPT_FAILED',
-          actorNim: nim,
-          actorEmail: email,
-          actorRole: 'VOTER',
-          targetId: candidateId,
-          targetType: 'CANDIDATE',
-          status: 'FAILED',
-          errorMsg: 'Not in whitelist',
-        });
-        return NextResponse.json({ error: 'Anda tidak terdaftar dalam whitelist.' }, { status: 403 });
-      }
       if (error.message === 'NOT_IN_DPT') {
         await createAuditLog({
           action: 'VOTE_ATTEMPT_FAILED',

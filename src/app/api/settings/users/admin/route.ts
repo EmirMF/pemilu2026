@@ -14,14 +14,14 @@ export async function POST(request: Request) {
       );
     }
 
-    // Check if user exists in whitelist
-    const whitelist = await prisma.whitelist.findUnique({
+    // Check if user exists
+    const voter = await prisma.voter.findUnique({
       where: { nim }
     });
 
-    if (!whitelist) {
+    if (!voter) {
       return NextResponse.json(
-        { error: 'User tidak ditemukan di whitelist' },
+        { error: 'User tidak ditemukan' },
         { status: 404 }
       );
     }

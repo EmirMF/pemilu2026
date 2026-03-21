@@ -1,36 +1,32 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 
-// GET - Fetch all users (whitelist + admin status)
+// GET - Fetch all users (voters + admin status)
 export async function GET() {
   try {
-    const whitelists = await prisma.whitelist.findMany({
+    const voters = await prisma.voter.findMany({
       orderBy: { createdAt: 'desc' }
     });
 
     // Check admin status for each user
     const users = await Promise.all(
-      whitelists.map(async (whitelist) => {
+      voters.map(async (voter) => {
         const admin = await prisma.admin.findUnique({
-          where: { nim: whitelist.nim }
-        });
-
-        const voter = await prisma.voter.findUnique({
-          where: { nim: whitelist.nim }
+          where: { nim: voter.nim }
         });
 
         // Check password in both voter and admin tables
-        const hasPassword = !!(voter?.password || admin?.password);
+        const hasPassword = !!(voter.password || admin?.password);
 
         return {
-          id: whitelist.id,
-          nim: whitelist.nim,
-          name: (whitelist as any).name || (voter as any)?.name || null,
-          email: voter?.email || `${whitelist.nim}@mahasiswa.itb.ac.id`,
+          id: voter.id,
+          nim: voter.nim,
+          name: voter.name || null,
+          email: voter.email || `${voter.nim}@mahasiswa.itb.ac.id`,
           isAdmin: !!admin,
-          isInDPT: (whitelist as any).isInDPT || false,
+          isInDPT: voter.isInDPT || false,
           hasPassword,
-          createdAt: whitelist.createdAt
+          createdAt: voter.createdAt
         };
       })
     );
@@ -45,7 +41,7 @@ export async function GET() {
   }
 }
 
-// POST - Add new user to whitelist
+// POST - Add new user
 export async function POST(request: Request) {
   try {
     const { nim } = await request.json();
@@ -60,7 +56,7 @@ export async function POST(request: Request) {
     const trimmedNim = nim.trim();
 
     // Check if already exists
-    const existing = await prisma.whitelist.findUnique({
+    const existing = await prisma.voter.findUnique({
       where: { nim: trimmedNim }
     });
 
@@ -71,19 +67,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // Add to whitelist
-    const whitelist = await prisma.whitelist.create({
-      data: { nim: trimmedNim }
+    // Add voter
+    const voter = await prisma.voter.create({
+      data: { 
+        nim: trimmedNim,
+        email: `${trimmedNim}@mahasiswa.itb.ac.id`
+      }
     });
 
     return NextResponse.json({
-      id: whitelist.id,
-      nim: whitelist.nim,
-      name: null,
-      email: `${whitelist.nim}@mahasiswa.itb.ac.id`,
+      id: voter.id,
+      nim: voter.nim,
+      name: voter.name,
+      email: voter.email,
       isAdmin: false,
-      isInDPT: false,
-      createdAt: whitelist.createdAt
+      isInDPT: voter.isInDPT,
+      createdAt: voter.createdAt
     });
   } catch (error) {
     console.error('Error adding user:', error);

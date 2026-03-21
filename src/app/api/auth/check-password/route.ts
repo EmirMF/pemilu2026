@@ -31,13 +31,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check whitelist first
-    const whitelistEntry = await prisma.whitelist.findUnique({
+    // Check voter exists
+    const voter = await prisma.voter.findUnique({
       where: { nim }
     });
 
-    if (!whitelistEntry) {
-      return NextResponse.json({ error: 'NIM tidak terdaftar dalam whitelist' }, { status: 403 });
+    if (!voter) {
+      return NextResponse.json({ error: 'NIM tidak terdaftar' }, { status: 403 });
     }
 
     // Check in Admin table
