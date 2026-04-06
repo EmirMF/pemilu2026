@@ -5,11 +5,13 @@ import { createAuditLog } from '@/lib/auditLog';
 
 const AZURE_CLIENT_ID = process.env.AZURE_CLIENT_ID;
 const AZURE_CLIENT_SECRET = process.env.AZURE_CLIENT_SECRET;
-const AZURE_REDIRECT_URI = process.env.AZURE_REDIRECT_URI;
 const TENANT_ID = 'common';
 
 export async function GET(request: Request) {
   try {
+    const origin = request.headers.get('origin') || `https://${request.headers.get('host')}`;
+    const redirectUri = `${origin}/api/auth/sso/callback`;
+
     const url = new URL(request.url);
     const code = url.searchParams.get('code');
     const error = url.searchParams.get('error');
@@ -22,7 +24,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=no_code', request.url));
     }
 
-    if (!AZURE_CLIENT_ID || !AZURE_CLIENT_SECRET || !AZURE_REDIRECT_URI) {
+    if (!AZURE_CLIENT_ID || !AZURE_CLIENT_SECRET) {
       return NextResponse.redirect(new URL('/login?error=oauth_config', request.url));
     }
 
@@ -31,7 +33,7 @@ export async function GET(request: Request) {
       client_id: AZURE_CLIENT_ID,
       client_secret: AZURE_CLIENT_SECRET,
       code,
-      redirect_uri: AZURE_REDIRECT_URI,
+      redirect_uri: redirectUri,
       grant_type: 'authorization_code',
     });
 
