@@ -12,7 +12,10 @@ export async function GET(request: Request) {
     );
   }
 
-  const origin = request.headers.get('origin') || `https://${request.headers.get('host')}`;
+  const host = request.headers.get('host') || 'localhost:3000';
+  const isLocalhost = host.includes('localhost');
+  const protocol = isLocalhost ? 'http' : 'https';
+  const origin = `${protocol}://${host}`;
   const redirectUri = `${origin}/api/auth/sso/callback`;
 
   const state = crypto.randomUUID();

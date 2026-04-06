@@ -31,14 +31,8 @@ function LoginContent() {
   }, [router]);
 
   useEffect(() => {
-    const error = searchParams.get('error');
-    if (error) {
-      console.error('OAuth error:', error);
-      setTimeout(() => {
-        router.replace('/login');
-      }, 3000);
-    }
-  }, [searchParams, router]);
+    searchParams.get('error');
+  }, [searchParams]);
 
   const handleSSOLogin = () => {
     window.location.href = '/api/auth/sso/init';
@@ -85,6 +79,18 @@ function LoginContent() {
           {searchParams.get('error') === 'oauth_error' && (
             <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-300 text-sm">
               Login dibatalkan. Silakan coba lagi.
+            </div>
+          )}
+
+          {searchParams.get('error') === 'not_in_whitelist' && (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-300 text-sm">
+              Akun Anda tidak terdaftar.
+            </div>
+          )}
+
+          {searchParams.get('error') && !['invalid_domain', 'oauth_error', 'not_in_whitelist'].includes(searchParams.get('error')!) && (
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-300 text-sm">
+              Terjadi kesalahan saat login. Silakan coba lagi.
             </div>
           )}
 

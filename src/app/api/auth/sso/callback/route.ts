@@ -9,7 +9,10 @@ const TENANT_ID = 'common';
 
 export async function GET(request: Request) {
   try {
-    const origin = request.headers.get('origin') || `https://${request.headers.get('host')}`;
+    const host = request.headers.get('host') || 'localhost:3000';
+    const isLocalhost = host.includes('localhost');
+    const protocol = isLocalhost ? 'http' : 'https';
+    const origin = `${protocol}://${host}`;
     const redirectUri = `${origin}/api/auth/sso/callback`;
 
     const url = new URL(request.url);
@@ -85,30 +88,34 @@ export async function GET(request: Request) {
     const nim = normalizedEmail.split('@')[0];
     const emailDomain = normalizedEmail.split('@')[1];
 
+    // Check if voter exists in Voter table
+    const voterRecord = await prisma.voter.findUnique({
+      where: { nim },
+    });
+
+    if (!voterRecord) {
+      await createAuditLog({
+        action: 'LOGIN_SSO_REJECTED',
+        actorEmail: normalizedEmail,
+        actorRole: 'VOTER',
+        status: 'BLOCKED',
+        errorMsg: 'NIM tidak terdaftar di Voter table',
+      });
+      return NextResponse.redirect(new URL('/login?error=not_in_whitelist', request.url));
+    }
+
     let isAdmin = false;
     try {
       const admin = await prisma.admin.findUnique({ where: { nim } });
       isAdmin = !!admin;
     } catch (e) {}
 
-    let voter = await prisma.voter.findUnique({ where: { nim } });
-    
-    if (!voter) {
-      voter = await prisma.voter.create({
-        data: {
-          nim,
-          email: normalizedEmail,
-          name: user.displayName || null,
-          isInDPT: true,
-        },
+    // Update voter name if changed
+    if (voterRecord.name !== user.displayName) {
+      await prisma.voter.update({
+        where: { nim },
+        data: { name: user.displayName },
       });
-    } else {
-      if (user.displayName && user.displayName !== voter.name) {
-        await prisma.voter.update({
-          where: { nim },
-          data: { name: user.displayName },
-        });
-      }
     }
 
     const signedSession = signCookie(normalizedEmail);
