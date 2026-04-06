@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
   const voterSession = request.cookies.get('voter_session');
   
-  // Redirect to homepage if already logged in and trying to access login page
+  // Redirect to login if already logged in and trying to access login page
   if (path === '/login' && voterSession) {
     return NextResponse.redirect(new URL('/', request.url));
   }
@@ -13,9 +13,7 @@ export function middleware(request: NextRequest) {
   // Public routes that don't require authentication
   const publicRoutes = [
     '/login',
-    '/admin',
-    '/api/auth/send-otp',
-    '/api/auth/verify-otp',
+    '/api/auth/sso',
     '/api/auth/check-password',
     '/api/auth/login-password',
     '/api/auth/set-password',
@@ -28,7 +26,23 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
   
-  // All other routes require authentication
+  // Routes that require authentication
+  const protectedRoutes = [
+    '/vote/:path*',
+    '/dashboard/:path*',
+    '/verify',
+    '/admin',
+  ];
+  
+  // Check if current path is a protected route
+  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
+  
+  // If it's a protected route and no session exists, redirect to login
+  if (isProtectedRoute && !voterSession) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+  
+  // All other routes (like landing page) require authentication
   if (!voterSession) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
@@ -40,10 +54,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/',
     '/login',
-    '/peraturan',
-    '/tata-cara',
     '/vote/:path*',
     '/dashboard/:path*',
     '/verify',

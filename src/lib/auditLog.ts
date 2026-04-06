@@ -4,8 +4,8 @@ import { headers } from 'next/headers'
 export type AuditAction =
   | 'VOTE'
   | 'VOTE_ATTEMPT_FAILED'
-  | 'LOGIN_OTP_SENT'
-  | 'LOGIN_OTP_VERIFIED'
+  | 'LOGIN_SSO_SUCCESS'
+  | 'LOGIN_SSO_REJECTED'
   | 'LOGIN_FAILED'
   | 'ADMIN_LOGIN'
   | 'ADMIN_LOGOUT'
@@ -13,6 +13,7 @@ export type AuditAction =
   | 'SETTINGS_GRADIENT_CHANGED'
   | 'RESULTS_PUBLISHED'
   | 'RESULTS_UNPUBLISHED'
+  | 'RESET_ELECTION'
   | 'CANDIDATE_CREATED'
   | 'CANDIDATE_UPDATED'
   | 'CANDIDATE_DELETED'
@@ -36,7 +37,7 @@ export interface AuditLogData {
   actorRole?: AuditRole
   targetId?: string
   targetType?: string
-  details?: Record<string, any>
+  details?: string | Record<string, any>
   status: AuditStatus
   errorMsg?: string
 }
@@ -61,7 +62,7 @@ export async function createAuditLog(data: AuditLogData): Promise<void> {
         actorRole: data.actorRole,
         targetId: data.targetId,
         targetType: data.targetType,
-        details: data.details ? JSON.stringify(data.details) : null,
+        details: typeof data.details === 'string' ? data.details : (data.details ? JSON.stringify(data.details) : null),
         ipAddress,
         userAgent,
         status: data.status,

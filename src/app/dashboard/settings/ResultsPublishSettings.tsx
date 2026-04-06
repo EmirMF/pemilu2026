@@ -24,7 +24,7 @@ export default function ResultsPublishSettings() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch('/api/results?realtime=1', { cache: 'no-store' })
+      const res = await fetch('/api/results?realtime=1&includeHidden=1', { cache: 'no-store' })
       if (!res.ok) throw new Error('Gagal mengambil status publikasi.')
       const json = await res.json()
       setStatus({

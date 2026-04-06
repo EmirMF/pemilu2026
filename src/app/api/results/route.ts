@@ -14,11 +14,12 @@ export async function GET(request: Request) {
     const url = new URL(request.url)
     const includeRecords = url.searchParams.get('includeRecords') === '1'
     const forceRealtime = url.searchParams.get('realtime') === '1' // Admin can force realtime
+    const includeHidden = url.searchParams.get('includeHidden') === '1'
     const take = Math.min(toInt(url.searchParams.get('take'), 50), 200)
     const skip = Math.max(toInt(url.searchParams.get('skip'), 0), 0)
 
     // Cache key based on query params
-    const cacheKey = `results:${forceRealtime ? 'realtime' : 'snapshot'}:${includeRecords}:${take}:${skip}`
+    const cacheKey = `results:${forceRealtime ? 'realtime' : 'snapshot'}:${includeRecords}:${take}:${skip}:${includeHidden}`
     const cacheTTL = forceRealtime ? 5 : 30 // 5s for realtime, 30s for snapshot
 
     const result = await getCacheOrSet(
@@ -37,11 +38,15 @@ export async function GET(request: Request) {
           mission: string | null
           photo: string | null
           draftLink: string | null
+          isHidden: boolean
           voteCount: number
         }>
         let totalVotes: number
         let isSnapshot = false
         let lastVoteAt: string | null = null
+
+        // Candidate filter based on includeHidden
+        const candidateWhere = includeHidden ? {} : { isHidden: false }
 
         // If results are published and not forcing realtime, use snapshot
         if (settings.resultsPublished && !forceRealtime) {
@@ -51,6 +56,7 @@ export async function GET(request: Request) {
 
           // Get candidate details
           const candidates = await prisma.candidate.findMany({
+            where: candidateWhere,
             orderBy: { id: 'asc' },
           })
 
@@ -63,6 +69,7 @@ export async function GET(request: Request) {
               mission: c.mission,
               photo: c.photo,
               draftLink: c.draftLink,
+              isHidden: c.isHidden,
               voteCount: published?.voteCount ?? 0,
             }
           })
@@ -74,6 +81,7 @@ export async function GET(request: Request) {
         } else {
           // Use realtime data
           const candidates = await prisma.candidate.findMany({
+            where: candidateWhere,
             orderBy: { id: 'asc' },
             include: { _count: { select: { VoteRecords: true } } },
           })
@@ -85,6 +93,7 @@ export async function GET(request: Request) {
             mission: c.mission,
             photo: c.photo,
             draftLink: c.draftLink,
+            isHidden: c.isHidden,
             voteCount: c._count.VoteRecords,
           }))
 

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import redis from '@/lib/redis';
 import { rateLimit } from '@/lib/rateLimit';
 
 export async function POST(req: NextRequest) {
@@ -12,14 +11,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if email is valid ITB format
-    if (!email.endsWith('@mahasiswa.itb.ac.id')) {
-      return NextResponse.json({ error: 'Email harus menggunakan domain @mahasiswa.itb.ac.id' }, { status: 400 });
+    if (!email.endsWith('@mahasiswa.itb.ac.id') && !email.endsWith('@itb.ac.id')) {
+      return NextResponse.json({ error: 'Email harus menggunakan domain @mahasiswa.itb.ac.id atau @itb.ac.id' }, { status: 400 });
     }
 
     const nim = email.split('@')[0];
 
     // Rate limit: 10 requests per minute per NIM
-    const rateLimitResult = await rateLimit(`check-password:${nim}`, {
+    const rateLimitResult = await rateLimit(`check-auth:${nim}`, {
       interval: 60,
       maxRequests: 10
     });
@@ -47,20 +46,12 @@ export async function POST(req: NextRequest) {
 
     const isAdmin = !!admin;
 
-    // Check if OTP exists in Redis
-    const existingOTP = await redis.get(`otp:${email}`);
-    const hasActiveOTP = !!existingOTP;
-
-    // For non-admin users, always use OTP (no password)
-    // For admin users, they should use /admin route with password
     return NextResponse.json({
-      hasPassword: false, // Always false for regular login
       isAdmin,
-      requiresOTP: true, // Always require OTP for regular login
-      hasActiveOTP
+      hasVoted: voter.hasVoted
     });
   } catch (error) {
-    console.error('Error checking password status:', error);
+    console.error('Error checking auth status:', error);
     return NextResponse.json(
       { error: 'Terjadi kesalahan' },
       { status: 500 }

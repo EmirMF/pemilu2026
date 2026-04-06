@@ -11,6 +11,7 @@ type Candidate = {
   mission: string | null;
   photo: string | null;
   draftLink: string | null;
+  isHidden: boolean;
 };
 
 export default function CandidateClient({ initialCandidates }: { initialCandidates: Candidate[] }) {
@@ -27,7 +28,8 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
     vision: '',
     mission: '',
     photo: '',
-    draftLink: ''
+    draftLink: '',
+    isHidden: false
   });
 
   const handleOpenModal = (candidate?: Candidate) => {
@@ -38,11 +40,12 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
         vision: candidate.vision,
         mission: candidate.mission || '',
         photo: candidate.photo || '',
-        draftLink: candidate.draftLink || ''
+        draftLink: candidate.draftLink || '',
+        isHidden: candidate.isHidden || false
       });
     } else {
       setEditingCandidate(null);
-      setFormData({ name: '', vision: '', mission: '', photo: '', draftLink: '' });
+      setFormData({ name: '', vision: '', mission: '', photo: '', draftLink: '', isHidden: false });
     }
     setIsModalOpen(true);
   };
@@ -359,6 +362,19 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
                   className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
                   placeholder="Tuliskan misi kandidat..."
                 ></textarea>
+              </div>
+
+              <div className="flex items-center gap-2 p-4 bg-neutral-50 dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-700">
+                <input
+                  type="checkbox"
+                  id="isHidden"
+                  checked={formData.isHidden}
+                  onChange={e => setFormData({ ...formData, isHidden: e.target.checked })}
+                  className="w-4 h-4 text-red-600 border-neutral-300 dark:border-neutral-600 rounded focus:ring-red-500"
+                />
+                <label htmlFor="isHidden" className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
+                  Sembunyikan dari landing page (Kotak Kosong)
+                </label>
               </div>
 
               <div className="pt-4 border-t border-neutral-100 dark:border-neutral-700 flex justify-end gap-3">

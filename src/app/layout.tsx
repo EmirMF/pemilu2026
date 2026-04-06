@@ -17,8 +17,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pemilu 2026",
-  description: "Pemilu 2026",
+  title: "Pemilu 8EH Radio ITB",
+  description: "Pemilu 8EH Radio ITB 2026",
   icons: {
     icon: '/8eh.ico', 
   },

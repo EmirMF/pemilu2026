@@ -60,7 +60,6 @@ export default function Navbar() {
   const navItems: Array<{ label: string; href?: string; onClick: () => void; disabled?: boolean }> = [
     { label: 'Beranda', href: '/', onClick: () => {} },
     { label: 'DPT', onClick: () => setIsDPTModalOpen(true) },
-    { label: 'Tata Cara', href: '/tata-cara', onClick: () => {} },
     { label: 'Peraturan', href: '/peraturan', onClick: () => {} },
   ]
 

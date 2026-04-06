@@ -52,6 +52,15 @@ export default function HeroSection({
     window.location.href = isAuthenticated ? '/vote' : '/login';
   };
 
+  const scrollToResults = () => {
+    const target = document.getElementById('results')
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      return
+    }
+    window.location.hash = 'results'
+  }
+
   const scrollToCandidates = () => {
     const target = document.getElementById('candidates')
     if (target) {
@@ -75,7 +84,7 @@ export default function HeroSection({
     if (voteButtonState === 'after') {
       return {
         label: 'Lihat Hasil',
-        onClick: scrollToCandidates,
+        onClick: scrollToResults,
         disabled: false,
       }
     }

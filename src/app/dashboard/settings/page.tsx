@@ -7,11 +7,8 @@ import SetPasswordCard from './SetPasswordCard';
 import ResultsPublishSettings from './ResultsPublishSettings';
 import TimelineSettings from './TimelineSettings';
 import PublishPasswordSettings from './PublishPasswordSettings';
-import OTPSettings from './OTPSettings';
-import OTPLogSettings from './OTPLogSettings';
-import OTPDashboardOnlySettings from './OTPDashboardOnlySettings';
 import BadgeVisibilitySettings from './BadgeVisibilitySettings';
-import TestModeSettings from './TestModeSettings';
+import ResetElectionSettings from './ResetElectionSettings';
 
 interface AccordionItemProps {
   title: string;
@@ -90,50 +87,14 @@ export default function SettingsPage() {
 
         {isSuperAdmin && (
           <AccordionItem
-            title="Password Publikasi Hasil"
-            description="Atur password untuk mempublikasikan hasil (hanya super admin)"
+            title="Password Sistem"
+            description="Atur password sistem untuk operasi sensitif (hanya super admin)"
             isOpen={openSection === 'publishPassword'}
             onToggle={() => toggleSection('publishPassword')}
           >
             <PublishPasswordSettings />
           </AccordionItem>
         )}
-
-        <AccordionItem
-          title="OTP Authentication"
-          description="Aktifkan atau nonaktifkan sistem OTP untuk login"
-          isOpen={openSection === 'otp'}
-          onToggle={() => toggleSection('otp')}
-        >
-          <OTPSettings />
-        </AccordionItem>
-
-        <AccordionItem
-          title="OTP Logging"
-          description="Simpan OTP ke database untuk fallback jika email gagal"
-          isOpen={openSection === 'otpLog'}
-          onToggle={() => toggleSection('otpLog')}
-        >
-          <OTPLogSettings />
-        </AccordionItem>
-
-        <AccordionItem
-          title="OTP Dashboard Only Mode"
-          description="Simpan OTP ke database tanpa mengirim email (untuk testing atau email service down)"
-          isOpen={openSection === 'otpDashboardOnly'}
-          onToggle={() => toggleSection('otpDashboardOnly')}
-        >
-          <OTPDashboardOnlySettings />
-        </AccordionItem>
-
-        <AccordionItem
-          title="Test Mode"
-          description="Atur mode testing untuk pengiriman OTP (default: ON untuk keamanan)"
-          isOpen={openSection === 'testMode'}
-          onToggle={() => toggleSection('testMode')}
-        >
-          <TestModeSettings />
-        </AccordionItem>
 
         <AccordionItem
           title="Status Pemilihan"
@@ -178,6 +139,15 @@ export default function SettingsPage() {
           onToggle={() => toggleSection('gradient')}
         >
           <GradientSettings />
+        </AccordionItem>
+
+        <AccordionItem
+          title="Reset Pemilihan"
+          description="Reset data pemilihan (status voters, suara, publikasi hasil)"
+          isOpen={openSection === 'reset'}
+          onToggle={() => toggleSection('reset')}
+        >
+          <ResetElectionSettings />
         </AccordionItem>
       </div>
     </div>

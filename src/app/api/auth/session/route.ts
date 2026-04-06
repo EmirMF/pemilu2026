@@ -20,14 +20,13 @@ export async function GET() {
 
     const nim = email.split('@')[0];
     
-    // Cache admin status check for 5 minutes
     const isAdmin = await getCacheOrSet(
       `admin:${nim}`,
       async () => {
         try {
           const admin = await prisma.admin.findUnique({ 
             where: { nim },
-            select: { id: true } // Only select id to minimize data transfer
+            select: { id: true }
           });
           return !!admin;
         } catch (adminError) {
@@ -35,19 +34,20 @@ export async function GET() {
           return false;
         }
       },
-      { ttl: 300 } // Cache for 5 minutes
+      { ttl: 300 }
     );
 
-    // Add cache headers
-    const headers = new Headers();
-    headers.set('Cache-Control', 'private, max-age=60'); // Private cache for 60 seconds
-    
-    return NextResponse.json({
+    const response = NextResponse.json({
       authenticated: true,
       nim,
       email,
       isAdmin
-    }, { headers });
+    });
+    
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    response.headers.set('Pragma', 'no-cache');
+    
+    return response;
   } catch (error) {
     console.error('Session Error:', error);
     return NextResponse.json({ authenticated: false }, { status: 200 });

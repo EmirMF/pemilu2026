@@ -141,7 +141,7 @@ export default async function VotePage() {
         <div className="max-w-4xl mx-auto px-4 pt-16">
           <div className="text-center my-12">
             <SplitText
-              text="Surat Suara Digital"
+              text="Surat Suara"
               className="text-6xl font-bold text-center mb-4"
               delay={50}
               duration={1.25}

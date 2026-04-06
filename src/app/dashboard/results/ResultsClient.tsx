@@ -7,6 +7,7 @@ type ResultCandidate = {
   id: string
   name: string
   photo: string | null
+  isHidden: boolean
   voteCount: number
   percentage: number
 }
@@ -56,11 +57,16 @@ function BarChart({ candidates }: { candidates: ResultCandidate[] }) {
           <div key={c.id}>
             <div className="flex items-end justify-between gap-4 mb-2">
               <div className="min-w-0">
-                <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate">
-                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs mr-2">
+                <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 truncate flex items-center gap-2">
+                  <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-300 text-xs">
                     {idx + 1}
                   </span>
                   {c.name}
+                  {c.isHidden && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-neutral-100 dark:bg-neutral-700 text-neutral-600 dark:text-neutral-300">
+                      Tersembunyi
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs text-neutral-500 dark:text-neutral-400">{c.voteCount} suara</div>
               </div>
@@ -107,6 +113,7 @@ export default function ResultsClient() {
         qs.set('take', String(recordsTake))
         qs.set('skip', String(skip))
       }
+      qs.set('includeHidden', '1')
       const res = await fetch(`/api/results${qs.toString() ? `?${qs.toString()}` : ''}`, { cache: 'no-store' })
       if (!res.ok) throw new Error('Gagal mengambil data hasil.')
       const json = (await res.json()) as ResultsResponse
@@ -158,7 +165,7 @@ export default function ResultsClient() {
       <div className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-2xl font-bold text-neutral-800 dark:text-neutral-100">Hasil Pemilihan</h2>
-          <p className="text-neutral-500 dark:text-neutral-400 mt-1">Rekap suara real-time dari database.</p>
+          <p className="text-neutral-500 dark:text-neutral-400 mt-1">Rekap suara dari hasil snapshot.</p>
           {data?.election.lastVoteAt && (
             <p className="text-xs text-neutral-400 dark:text-neutral-500 mt-1">
               Update terakhir: {new Date(data.election.lastVoteAt).toLocaleString('id-ID', { 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getElectionSettings, setElectionOpen, invalidateElectionSettingsCache } from '@/lib/election'
 import prisma from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
 
 const VOTE_BUTTON_STATES = ['default', 'before', 'after', 'hidden'] as const
 type VoteButtonState = (typeof VOTE_BUTTON_STATES)[number]
@@ -20,9 +21,6 @@ function formatElectionSettings(settings: {
   showVotingStatus?: boolean | null
   showUserVoteStatus?: boolean | null
   voteButtonState?: string | null
-  otpEnabled?: boolean | null
-  otpLogEnabled?: boolean | null
-  otpDashboardOnly?: boolean | null
   updatedAt: Date | string
 }) {
   return {
@@ -40,9 +38,6 @@ function formatElectionSettings(settings: {
     showVotingStatus: settings.showVotingStatus ?? true,
     showUserVoteStatus: settings.showUserVoteStatus ?? true,
     voteButtonState: isVoteButtonState(settings.voteButtonState) ? settings.voteButtonState : 'default',
-    otpEnabled: settings.otpEnabled ?? false,
-    otpLogEnabled: settings.otpLogEnabled ?? false,
-    otpDashboardOnly: settings.otpDashboardOnly ?? false,
     updatedAt: settings.updatedAt instanceof Date ? settings.updatedAt : new Date(settings.updatedAt),
   }
 }
@@ -72,6 +67,36 @@ export async function PUT(request: Request) {
           { error: 'State tombol vote tidak valid.' },
           { status: 400 },
         )
+      }
+
+      // Password required for 'default' and 'after' states
+      if (body.voteButtonState === 'default' || body.voteButtonState === 'after') {
+        if (!body.password) {
+          return NextResponse.json(
+            { error: 'Password sistem diperlukan.' },
+            { status: 400 },
+          )
+        }
+
+        const settings = await prisma.electionSettings.findUnique({
+          where: { key: 'main' },
+        })
+
+        const storedPassword = (settings as any)?.publishPassword
+        if (!storedPassword) {
+          return NextResponse.json(
+            { error: 'Password sistem belum dikonfigurasi.' },
+            { status: 500 },
+          )
+        }
+
+        const isValid = await bcrypt.compare(body.password, storedPassword)
+        if (!isValid) {
+          return NextResponse.json(
+            { error: 'Password sistem salah.' },
+            { status: 401 },
+          )
+        }
       }
 
       const updated = await prisma.electionSettings.upsert({
@@ -155,14 +180,6 @@ export async function PATCH(request: Request) {
       updateData.showUserVoteStatus = Boolean(body.showUserVoteStatus)
     }
     
-    if ('otpLogEnabled' in body) {
-      updateData.otpLogEnabled = Boolean(body.otpLogEnabled)
-    }
-    
-    if ('otpDashboardOnly' in body) {
-      updateData.otpDashboardOnly = Boolean(body.otpDashboardOnly)
-    }
-    
     if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ error: 'Tidak ada data untuk diupdate.' }, { status: 400 })
     }
@@ -180,17 +197,14 @@ export async function PATCH(request: Request) {
     // Invalidate cache
     await invalidateElectionSettingsCache()
     
-    const result = updated as typeof updated & { showVotingStatus?: boolean; showUserVoteStatus?: boolean; otpLogEnabled?: boolean; otpDashboardOnly?: boolean }
+    const result = updated as typeof updated & { showVotingStatus?: boolean; showUserVoteStatus?: boolean }
     
     return NextResponse.json({
       showVotingStatus: result.showVotingStatus ?? true,
       showUserVoteStatus: result.showUserVoteStatus ?? true,
-      otpLogEnabled: result.otpLogEnabled ?? false,
-      otpDashboardOnly: result.otpDashboardOnly ?? false,
     })
   } catch (error) {
     console.error('Error updating badge visibility settings:', error)
     return NextResponse.json({ error: 'Terjadi kesalahan server.' }, { status: 500 })
   }
 }
-

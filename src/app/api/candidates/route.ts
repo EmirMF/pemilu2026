@@ -16,21 +16,18 @@ export async function GET() {
           }
         });
         
-        // Map the result so frontend still receives voteCount
         const mappedCandidates = candidates.map(candidate => ({
           ...candidate,
           voteCount: candidate._count.VoteRecords
         }));
         
-        // Remove _count from objects before sending
         mappedCandidates.forEach(c => delete (c as any)._count);
         
         return mappedCandidates;
       },
-      { ttl: 60 } // Cache for 60 seconds
+      { ttl: 60 }
     );
 
-    // Add cache headers
     const headers = new Headers();
     headers.set('Cache-Control', 'public, s-maxage=60, stale-while-revalidate=120');
     
@@ -44,7 +41,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, vision, mission, photo, draftLink } = body;
+    const { name, vision, mission, photo, draftLink, isHidden } = body;
 
     if (!name || !vision) {
       return NextResponse.json({ error: 'Nama dan Visi wajib diisi.' }, { status: 400 });
@@ -56,11 +53,11 @@ export async function POST(request: Request) {
         vision,
         mission,
         photo,
-        draftLink
+        draftLink,
+        isHidden: isHidden || false
       }
     });
 
-    // Invalidate cache after creating new candidate
     await deleteCache('candidates:list');
 
     return NextResponse.json(candidate, { status: 201 });

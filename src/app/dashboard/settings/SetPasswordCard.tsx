@@ -65,7 +65,7 @@ export default function SetPasswordCard() {
         </div>
         <div>
           <h2 className="text-xl font-bold text-neutral-900 dark:text-neutral-100">Atur Password Admin</h2>
-          <p className="text-sm text-neutral-600 dark:text-neutral-400">Atur password untuk login cepat tanpa OTP</p>
+          <p className="text-sm text-neutral-600 dark:text-neutral-400">Atur password untuk login cepat</p>
         </div>
       </div>
 

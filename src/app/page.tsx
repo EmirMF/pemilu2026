@@ -4,6 +4,7 @@ import Grainient from '@/components/Grainient';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
 import CandidateSection from '@/components/CandidateSection';
+import ResultsSection from '@/components/ResultsSection';
 import CountdownSection from '@/components/CountdownSection';
 import TimelineSection from '@/components/TimelineSection';
 import { useEffect, useState } from 'react';
@@ -132,8 +133,14 @@ export default function LandingPage() {
         showUserVoteStatus={showUserVoteStatus}
         voteButtonState={voteButtonState}
       />
-      <CandidateSection candidates={candidates} />
-      <CountdownSection countdownEnd={countdownEnd} countdownType={countdownType} />
+      {voteButtonState === 'after' ? (
+        <ResultsSection />
+      ) : (
+        <>
+          <CandidateSection candidates={candidates} />
+          <CountdownSection countdownEnd={countdownEnd} countdownType={countdownType} />
+        </>
+      )}
       <TimelineSection />
     </main>
     </>
