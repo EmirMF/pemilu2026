@@ -25,10 +25,11 @@ export async function GET(request: Request) {
     const result = await getCacheOrSet(
       cacheKey,
       async () => {
-        const [settings, totalVoters, totalVoted] = await Promise.all([
+        // Count based on isInDPT (eligible voters / DPT)
+        const [settings, totalDPT, totalVoted] = await Promise.all([
           getElectionSettings(),
-          prisma.voter.count(),
-          prisma.voter.count({ where: { hasVoted: true } }),
+          prisma.voter.count({ where: { isInDPT: true } }),
+          prisma.voter.count({ where: { hasVoted: true, isInDPT: true } }),
         ])
 
         let mappedCandidates: Array<{
@@ -107,7 +108,7 @@ export async function GET(request: Request) {
           lastVoteAt = lastVote?.createdAt.toISOString() || null
         }
 
-        const turnoutPct = totalVoters === 0 ? 0 : (totalVoted / totalVoters) * 100
+        const turnoutPct = totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100
 
         const candidatesWithPct = mappedCandidates.map((c) => ({
           ...c,
@@ -160,7 +161,7 @@ export async function GET(request: Request) {
             voteButtonState,
             lastVoteAt,
           },
-          totals: { totalVotes, totalVoters, totalVoted, turnoutPct },
+          totals: { totalVotes, totalDPT, totalVoted, turnoutPct },
           candidates: candidatesWithPct,
           records,
           pagination: includeRecords ? { take, skip } : null,

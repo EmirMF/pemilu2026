@@ -5,9 +5,13 @@ import DashboardClient from './DashboardClient'
 export const dynamic = 'force-dynamic'
 
 export default async function DashboardPage() {
-  const [settings, voters, publishedResults] = await Promise.all([
+  const [settings, voters, dptVoters, publishedResults] = await Promise.all([
     getElectionSettings(),
     prisma.voter.findMany({
+      select: { hasVoted: true },
+    }),
+    prisma.voter.findMany({
+      where: { isInDPT: true },
       select: { hasVoted: true },
     }),
     prisma.publishedResult.findMany({
@@ -59,8 +63,9 @@ export default async function DashboardPage() {
   
   const voterStats = {
     total: voters.length,
-    voted: voters.filter(v => v.hasVoted).length,
-    notVoted: voters.filter(v => !v.hasVoted).length,
+    totalDPT: dptVoters.length,
+    voted: dptVoters.filter(v => v.hasVoted).length,
+    notVoted: dptVoters.filter(v => !v.hasVoted).length,
   }
 
   return (

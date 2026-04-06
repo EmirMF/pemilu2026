@@ -21,7 +21,7 @@ type VoteRecordRow = {
 
 type ResultsResponse = {
   election: { isOpen: boolean; updatedAt: string; lastVoteAt: string | null }
-  totals: { totalVotes: number; totalVoters: number; totalVoted: number; turnoutPct: number }
+  totals: { totalVotes: number; totalDPT: number; totalVoted: number; turnoutPct: number }
   candidates: ResultCandidate[]
   records: VoteRecordRow[] | null
   pagination: { take: number; skip: number } | null
@@ -209,7 +209,7 @@ export default function ResultsClient() {
         <div className="bg-white dark:bg-neutral-900 rounded-2xl p-6 shadow-sm border border-neutral-100 dark:border-neutral-700">
           <div className="text-sm font-medium text-neutral-500 dark:text-neutral-400 mb-1">Partisipasi</div>
           <div className="text-2xl font-bold text-neutral-900 dark:text-neutral-100">
-            {data ? `${data.totals.totalVoted}/${data.totals.totalVoters}` : loading ? '…' : '0/0'}
+            {data ? `${data.totals.totalVoted}/${data.totals.totalDPT}` : loading ? '…' : '0/0'}
           </div>
           <div className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
             {data ? `${data.totals.turnoutPct.toFixed(1)}% turnout` : ''}

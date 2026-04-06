@@ -13,6 +13,7 @@ type CandidateRow = {
 
 type VoterStats = {
   total: number
+  totalDPT: number
   voted: number
   notVoted: number
 }
@@ -31,12 +32,12 @@ export default function DashboardClient({
   lastUpdate: string | null
 }) {
   const sorted = [...candidates].sort((a, b) => b.voteCount - a.voteCount)
-  const participationRate = voterStats.total > 0 ? (voterStats.voted / voterStats.total) * 100 : 0
+  const participationRate = voterStats.totalDPT > 0 ? (voterStats.voted / voterStats.totalDPT) * 100 : 0
   const [showVotes, setShowVotes] = useState(false)
 
   const statsCards = [
     {
-      title: 'Total Pemilih',
+      title: 'Total User',
       value: voterStats.total,
       icon: Users,
       color: 'bg-blue-500',
@@ -44,12 +45,20 @@ export default function DashboardClient({
       textColor: 'text-blue-600 dark:text-blue-400',
     },
     {
-      title: 'Sudah Memilih',
-      value: voterStats.voted,
-      icon: UserCheck,
+      title: 'Total DPT',
+      value: voterStats.totalDPT,
+      icon: Vote,
       color: 'bg-green-500',
       lightColor: 'bg-green-50 dark:bg-green-900/30',
       textColor: 'text-green-600 dark:text-green-400',
+    },
+    {
+      title: 'Sudah Memilih',
+      value: voterStats.voted,
+      icon: UserCheck,
+      color: 'bg-purple-500',
+      lightColor: 'bg-purple-50 dark:bg-purple-900/30',
+      textColor: 'text-purple-600 dark:text-purple-400',
     },
     {
       title: 'Belum Memilih',
@@ -59,13 +68,30 @@ export default function DashboardClient({
       lightColor: 'bg-orange-50 dark:bg-orange-900/30',
       textColor: 'text-orange-600 dark:text-orange-400',
     },
+  ]
+  
+  const totalUserStats = [
     {
-      title: 'Total Suara',
-      value: totalVotes,
-      icon: Vote,
-      color: 'bg-purple-500',
-      lightColor: 'bg-purple-50 dark:bg-purple-900/30',
-      textColor: 'text-purple-600 dark:text-purple-400',
+      title: 'Total User',
+      value: voterStats.total,
+    },
+    {
+      title: 'Total DPT',
+      value: voterStats.totalDPT,
+    },
+    {
+      title: 'Sudah Memilih',
+      value: voterStats.voted,
+      color: 'text-green-600',
+    },
+    {
+      title: 'Belum Memilih',
+      value: voterStats.notVoted,
+      color: 'text-orange-600',
+    },
+    {
+      title: 'Partisipasi',
+      value: `${participationRate.toFixed(1)}%`,
     },
   ]
 
@@ -255,7 +281,7 @@ export default function DashboardClient({
                     <span className="font-semibold text-neutral-800 dark:text-neutral-100 text-sm lg:text-base">{candidate.name}</span>
                     {isLeading && showVotes && (
                       <span className="text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-2 py-0.5 rounded-full font-medium">
-                        Terdepan
+                        Teratas
                       </span>
                     )}
                   </div>
@@ -318,18 +344,12 @@ export default function DashboardClient({
         <div className="bg-white dark:bg-neutral-900 p-4 lg:p-6 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-700">
           <h4 className="font-semibold text-neutral-800 dark:text-neutral-100 mb-3 text-sm lg:text-base">Statistik Partisipasi</h4>
           <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
-              <span className="text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">Total DPT</span>
-              <span className="font-medium text-neutral-800 dark:text-neutral-100">{voterStats.total}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">Sudah Menggunakan Hak Pilih</span>
-              <span className="font-medium text-green-600">{voterStats.voted}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">Belum Menggunakan Hak Pilih</span>
-              <span className="font-medium text-orange-600">{voterStats.notVoted}</span>
-            </div>
+            {totalUserStats.map((stat) => (
+              <div key={stat.title} className="flex justify-between">
+                <span className="text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">{stat.title}</span>
+                <span className={`font-medium ${stat.color || 'text-neutral-800 dark:text-neutral-100'}`}>{stat.value}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

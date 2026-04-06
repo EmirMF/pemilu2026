@@ -8,17 +8,18 @@ interface Voter {
   nim: string;
   email: string;
   hasVoted: boolean;
+  votedAt: string | null;
   createdAt: string;
 }
 
-type SortField = 'nim' | 'email' | 'hasVoted' | 'createdAt';
+type SortField = 'nim' | 'email' | 'hasVoted' | 'votedAt';
 type SortOrder = 'asc' | 'desc';
 
 export default function VotersClient() {
   const [voters, setVoters] = useState<Voter[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortField, setSortField] = useState<SortField>('createdAt');
+  const [sortField, setSortField] = useState<SortField>('votedAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
   useEffect(() => {
@@ -71,9 +72,9 @@ export default function VotersClient() {
           aValue = a.hasVoted;
           bValue = b.hasVoted;
           break;
-        case 'createdAt':
-          aValue = new Date(a.createdAt);
-          bValue = new Date(b.createdAt);
+        case 'votedAt':
+          aValue = a.votedAt ? new Date(a.votedAt) : new Date(0);
+          bValue = b.votedAt ? new Date(b.votedAt) : new Date(0);
           break;
         default:
           return 0;
@@ -160,11 +161,11 @@ export default function VotersClient() {
                 </th>
                 <th className="px-4 lg:px-6 py-3 lg:py-4 font-semibold text-neutral-600 dark:text-neutral-400 text-xs lg:text-sm">
                   <button
-                    onClick={() => handleSort('createdAt')}
+                    onClick={() => handleSort('votedAt')}
                     className="flex items-center gap-1 hover:text-secondary-600 transition-colors"
                   >
-                    Tanggal
-                    <ArrowUpDown size={12} className={sortField === 'createdAt' ? 'text-secondary-600' : ''} />
+                    Tanggal Vote
+                    <ArrowUpDown size={12} className={sortField === 'votedAt' ? 'text-secondary-600' : ''} />
                   </button>
                 </th>
               </tr>
@@ -188,22 +189,28 @@ export default function VotersClient() {
                     )}
                   </td>
                   <td className="px-4 lg:px-6 py-3 lg:py-4 text-neutral-500 dark:text-neutral-400 text-xs lg:text-sm">
-                    <span className="hidden lg:inline">
-                      {new Date(voter.createdAt).toLocaleDateString('id-ID', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })}
-                    </span>
-                    <span className="lg:hidden">
-                      {new Date(voter.createdAt).toLocaleDateString('id-ID', {
-                        day: '2-digit',
-                        month: '2-digit',
-                        year: '2-digit'
-                      })}
-                    </span>
+                    {voter.votedAt ? (
+                      <>
+                        <span className="hidden lg:inline">
+                          {new Date(voter.votedAt).toLocaleDateString('id-ID', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                        <span className="lg:hidden">
+                          {new Date(voter.votedAt).toLocaleDateString('id-ID', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: '2-digit',
+                          })}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-neutral-400 dark:text-neutral-500">-</span>
+                    )}
                   </td>
                 </tr>
               ))}

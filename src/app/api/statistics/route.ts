@@ -8,9 +8,9 @@ export async function GET() {
       where: { isInDPT: true }
     });
     
-    // Get total voters who have voted
+    // Get total voters who have voted (only from DPT)
     const totalVoted = await prisma.voter.count({
-      where: { hasVoted: true }
+      where: { hasVoted: true, isInDPT: true }
     });
     
     // Calculate turnout rate
