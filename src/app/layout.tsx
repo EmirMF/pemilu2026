@@ -5,6 +5,7 @@ import "./globals.css";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import Footer from "@/components/Footer";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ToastProvider } from "@/components/Toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -55,11 +56,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <Suspense fallback={null}>
-            <LoadingOverlay />
-          </Suspense>
-          {children}
-          <Footer />
+          <ToastProvider>
+            <Suspense fallback={null}>
+              <LoadingOverlay />
+            </Suspense>
+            {children}
+            <Footer />
+          </ToastProvider>
         </ThemeProvider>
       </body>
     </html>

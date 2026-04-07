@@ -26,13 +26,30 @@ export default async function VotePage() {
   // Check if election is open
   const electionSettings = await getElectionSettings();
   if (!electionSettings.isOpen) {
+    const formattedDate = electionSettings.countdownEnd 
+      ? new Date(electionSettings.countdownEnd).toLocaleDateString('id-ID', { 
+          weekday: 'long', 
+          day: 'numeric', 
+          month: 'long', 
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      : null;
+    
     return (
       <>
         <GradientBackground />
         <main className="min-h-screen flex items-center justify-center p-4">
           <div className="bg-white dark:bg-neutral-900 border border-primary-200 dark:border-neutral-700 p-8 rounded-3xl max-w-md w-full text-center shadow-2xl">
             <h1 className="text-2xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">Pemilihan Ditutup</h1>
-            <p className="text-neutral-600 dark:text-neutral-400">Maaf, pemilihan saat ini sedang tidak berlangsung.</p>
+            <p className="text-neutral-600 dark:text-neutral-400 mb-2">Maaf, pemilihan saat ini sedang tidak berlangsung.</p>
+            <a
+              href="/"
+              className="inline-block w-full py-3 mt-4 rounded-2xl bg-neutral-200 dark:bg-neutral-800 hover:bg-neutral-300 dark:hover:bg-neutral-700 transition-all duration-300 font-medium text-neutral-800 dark:text-neutral-200"
+            >
+              Kembali ke Home
+            </a>
           </div>
         </main>
       </>

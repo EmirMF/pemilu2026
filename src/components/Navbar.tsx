@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { Users, Menu, X, User, LogOut, LayoutDashboard } from 'lucide-react'
+import { Users, Menu, X, User, LogOut, LayoutDashboard, CheckCircle, LogIn } from 'lucide-react'
 import Image from 'next/image'
 import DPTModal from './DPTModal'
 import ThemeToggle from './ThemeToggle'
+import { useToast } from './Toast'
 
 export default function Navbar() {
   const [isDPTModalOpen, setIsDPTModalOpen] = useState(false)
@@ -12,7 +13,9 @@ export default function Navbar() {
   const [userNim, setUserNim] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+  const [isElectionOpen, setIsElectionOpen] = useState(true)
   const userMenuRef = useRef<HTMLDivElement>(null)
+  const { showToast } = useToast()
 
   useEffect(() => {
     // Fetch user session
@@ -25,6 +28,14 @@ export default function Navbar() {
         }
       })
       .catch(err => console.error('Failed to fetch session:', err))
+      
+    // Fetch election status
+    fetch('/api/election/status')
+      .then(res => res.json())
+      .then(data => {
+        setIsElectionOpen(data.isOpen ?? true)
+      })
+      .catch(err => console.error('Failed to fetch election status:', err))
   }, [])
 
   // Close dropdown when clicking outside
@@ -62,6 +73,10 @@ export default function Navbar() {
     { label: 'DPT', onClick: () => setIsDPTModalOpen(true) },
     { label: 'Peraturan', href: '/peraturan', onClick: () => {} },
   ]
+
+  const authNavItems: Array<{ label: string; href: string }> = userNim 
+    ? [{ label: 'Vote', href: '/vote' }]
+    : [{ label: 'Login', href: '/login' }]
 
   return (
     <>
@@ -112,6 +127,28 @@ export default function Navbar() {
                 )
               ))}
               
+              {/* Login/Vote Button */}
+              {authNavItems.map((item) => (
+                item.label === 'Vote' && !isElectionOpen ? (
+                  <button
+                    key={item.label}
+                    onClick={() => showToast('Voting belum dibuka', 'error')}
+                    className="text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 text-sm font-medium transition-colors flex items-center gap-1"
+                  >
+                    {item.label}
+                  </button>
+                ) : (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    className="text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 text-sm font-medium transition-colors flex items-center gap-1"
+                  >
+                    {item.label === 'Login' && <LogIn size={16} />}
+                    {item.label}
+                  </a>
+                )
+              ))}
+
               {/* Theme Toggle Button */}
               <ThemeToggle className="p-2 text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-neutral-800/50 rounded-lg transition-colors" />
               
@@ -203,6 +240,32 @@ export default function Navbar() {
                 className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
               />
               
+              {/* Login/Vote Button in Mobile */}
+              {authNavItems.map((item) => (
+                item.label === 'Vote' && !isElectionOpen ? (
+                  <button
+                    key={item.label}
+                    onClick={() => {
+                      showToast('Voting belum dibuka', 'error')
+                      setIsMobileMenuOpen(false)
+                    }}
+                    className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    {item.label}
+                  </button>
+                ) : (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    {item.label === 'Login' && <LogIn size={16} />}
+                    {item.label}
+                  </a>
+                )
+              ))}
+               
               {/* User Menu in Mobile */}
               {userNim && (
                 <>
