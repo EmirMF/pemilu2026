@@ -105,7 +105,7 @@ export default function HeroSection({
           className="w-3/4 h-auto object-contain opacity-20 dark:opacity-10 md:scale-100 scale-150"
         />
       </div>
-      <div className="md:hidden fixed inset-0 z-0 flex pointer-events-none justify-center items-end">
+      <div className="md:hidden absolute inset-0 z-0 flex pointer-events-none justify-center items-end">
         <img 
           src="/radio-home.png" 
           alt="" 

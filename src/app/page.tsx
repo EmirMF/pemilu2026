@@ -100,7 +100,7 @@ export default function LandingPage() {
           color1={theme === 'dark' ? "#1a1a1a" : "#DB907F"}
           color2={theme === 'dark' ? "#402121" : "#FFDE7A"}
           color3={theme === 'dark' ? "#574316" : "#f0dcda"}
-          timeSpeed={1.2}
+          timeSpeed={0.7}
           colorBalance={0}
           warpStrength={1}
           warpFrequency={4}
