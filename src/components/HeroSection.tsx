@@ -98,6 +98,20 @@ export default function HeroSection({
 
   return (
     <section className="relative w-full h-screen flex flex-col items-center justify-center text-neutral-900 dark:text-neutral-50 overflow-hidden">
+      <div className="fixed bottom-0 left-0 right-0 z-0 md:flex md:items-center md:justify-center hidden">
+        <img 
+          src="/radio-home.png" 
+          alt="" 
+          className="w-3/4 h-auto object-contain opacity-20 dark:opacity-10 md:scale-100 scale-150"
+        />
+      </div>
+      <div className="md:hidden fixed inset-0 z-0 flex pointer-events-none justify-center items-end">
+        <img 
+          src="/radio-home.png" 
+          alt="" 
+          className="w-full h-auto object-contain opacity-20 dark:opacity-10 scale-100"
+        />
+      </div>
       <div className="relative z-10 text-center max-w-4xl px-4">
         <motion.h1
           className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8"
