@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { ArrowLeft } from 'lucide-react';
 import GradientBackground from '@/components/GradientBackground';
@@ -67,7 +68,7 @@ function LoginContent() {
               />
             </div>
             <h1 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-2">Ahoy Kru's</h1>
-            <p className="text-neutral-600 dark:text-neutral-400">Login ke Pemilu App 8EH Radio ITB 2026</p>
+            <p className="text-neutral-600 dark:text-neutral-400">Login ke Pemilu 8EH Radio ITB 2026</p>
           </div>
 
           {searchParams.get('error') === 'invalid_domain' && (
@@ -84,7 +85,7 @@ function LoginContent() {
 
           {searchParams.get('error') === 'not_in_whitelist' && (
             <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg text-red-800 dark:text-red-300 text-sm">
-              Akun Anda tidak terdaftar.
+              Akun Anda tidak terdaftar. Hubungi administrator.
             </div>
           )}
 

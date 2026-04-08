@@ -49,8 +49,8 @@ export default function ResetElectionSettings() {
   const resetOptions: { value: ResetType; label: string; desc: string }[] = [
     { value: 'voters', label: 'Reset Status Pemilih', desc: 'Hanya mereset status voted semua pemilih (mengaktifkan kembali voting)' },
     { value: 'votes', label: 'Reset Suara', desc: 'Menghapus semua record suara (kandidat tetap ada)' },
-    { value: 'results', label: 'Reset Publikasi Hasil', desc: 'Membatalkan publikasi hasil di landing page' },
-    { value: 'all', label: 'Reset Penuh (Semua)', desc: 'Menghapus semua voters voted, suara, dan hasil publikasi' },
+    { value: 'results', label: 'Reset Snapshot', desc: 'Membatalkan snapshot' },
+    { value: 'all', label: 'Reset Penuh (Semua)', desc: 'Menghapus semua voters voted, suara, dan snapshot' },
   ]
 
   return (
@@ -128,7 +128,7 @@ export default function ResetElectionSettings() {
             <div className="mb-4">
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
                 <Lock size={14} className="inline mr-1" />
-                Password Publikasi Hasil
+                Password Sistem
               </label>
               <input
                 type="password"

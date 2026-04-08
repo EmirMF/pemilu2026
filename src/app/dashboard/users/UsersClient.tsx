@@ -32,6 +32,9 @@ export default function UsersClient() {
   const [editingName, setEditingName] = useState("");
   const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [setPasswordModal, setSetPasswordModal] = useState<{ open: boolean; nim: string; name: string | null }>({ open: false, nim: '', name: null });
+  const [setPasswordLoading, setSetPasswordLoading] = useState(false);
+  const [setPasswordForm, setSetPasswordForm] = useState({ password: '', confirmPassword: '' });
 
   const fetchUsers = async () => {
     try {
@@ -148,26 +151,42 @@ export default function UsersClient() {
     }
   };
 
-  const handleResetPassword = async (nim: string) => {
-    if (!confirm(`Yakin ingin reset password untuk NIM ${nim}? Password akan dihapus dan user harus set password baru.`)) return;
+  const handleSetPassword = async () => {
+    if (!setPasswordForm.password) {
+      alert("Password harus diisi");
+      return;
+    }
+    if (setPasswordForm.password.length < 6) {
+      alert("Password minimal 6 karakter");
+      return;
+    }
+    if (setPasswordForm.password !== setPasswordForm.confirmPassword) {
+      alert("Password tidak cocok");
+      return;
+    }
 
+    setSetPasswordLoading(true);
     try {
-      const res = await fetch("/api/settings/users/reset-password", {
+      const res = await fetch("/api/settings/users/set-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nim }),
+        body: JSON.stringify({ nim: setPasswordModal.nim, password: setPasswordForm.password }),
       });
 
       if (res.ok) {
-        alert("Password berhasil direset");
+        alert("Password berhasil diatur");
+        setSetPasswordModal({ open: false, nim: '', name: null });
+        setSetPasswordForm({ password: '', confirmPassword: '' });
         fetchUsers();
       } else {
         const data = await res.json();
-        alert(data.error || "Gagal reset password");
+        alert(data.error || "Gagal mengatur password");
       }
     } catch (err) {
-      console.error("Gagal reset password", err);
-      alert("Terjadi kesalahan saat reset password");
+      console.error("Gagal mengatur password", err);
+      alert("Terjadi kesalahan saat mengatur password");
+    } finally {
+      setSetPasswordLoading(false);
     }
   };
 
@@ -360,38 +379,8 @@ export default function UsersClient() {
     }
   };
 
-  const handleBulkResetPassword = async () => {
-    if (selectedUsers.size === 0) return;
-    if (!confirm(`Yakin ingin reset password ${selectedUsers.size} user yang dipilih? Password akan dihapus dan user harus set password baru.`)) return;
-
-    setBulkActionLoading(true);
-    try {
-      const selectedNims = users.filter(u => selectedUsers.has(u.id) && !u.isAdmin).map(u => u.nim);
-      if (selectedNims.length === 0) {
-        alert('Tidak ada user non-admin yang dipilih');
-        return;
-      }
-      const promises = selectedNims.map(nim =>
-        fetch('/api/settings/users/reset-password', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nim }),
-        })
-      );
-      await Promise.all(promises);
-      alert(`Berhasil reset password ${selectedNims.length} user`);
-      setSelectedUsers(new Set());
-      fetchUsers();
-    } catch (error) {
-      console.error('Error bulk resetting password:', error);
-      alert('Terjadi kesalahan saat reset password');
-    } finally {
-      setBulkActionLoading(false);
-    }
-  };
-
   const filteredAndSortedUsers = useMemo(() => {
-    let filtered = users.filter(user =>
+    const filtered = users.filter(user =>
       user.nim.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.name && user.name.toLowerCase().includes(searchQuery.toLowerCase()))
@@ -552,14 +541,6 @@ export default function UsersClient() {
             >
               <XCircle size={14} />
               Hapus dari DPT
-            </button>
-            <button
-              onClick={handleBulkResetPassword}
-              disabled={bulkActionLoading}
-              className="px-3 py-1.5 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 disabled:opacity-50 flex items-center gap-1 text-sm transition-colors"
-            >
-              <KeyRound size={14} />
-              Reset Password
             </button>
             <button
               onClick={handleBulkDelete}
@@ -735,26 +716,21 @@ export default function UsersClient() {
                     <td className="py-3 px-4 text-center">
                       <div className="flex items-center justify-center gap-2">
                         {user.hasPassword ? (
-                          <>
-                            <span className="inline-flex items-center gap-1 px-2 lg:px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium">
-                              <Key size={12} />
-                              <span className="hidden sm:inline">Set</span>
-                            </span>
-                            {!user.isAdmin && (
-                              <button
-                                onClick={() => handleResetPassword(user.nim)}
-                                className="p-1 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded transition-colors"
-                                title="Reset Password"
-                              >
-                                <KeyRound size={14} />
-                              </button>
-                            )}
-                          </>
+                          <button
+                            onClick={() => setSetPasswordModal({ open: true, nim: user.nim, name: user.name })}
+                            className="inline-flex items-center gap-1 px-2 lg:px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                          >
+                            <Key size={12} />
+                            <span className="hidden sm:inline">Set</span>
+                          </button>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2 lg:px-3 py-1 bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 rounded-full text-xs font-medium">
-                            <XCircle size={12} />
-                            <span className="hidden sm:inline">Belum</span>
-                          </span>
+                          <button
+                            onClick={() => setSetPasswordModal({ open: true, nim: user.nim, name: user.name })}
+                            className="inline-flex items-center gap-1 px-2 lg:px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors"
+                          >
+                            <KeyRound size={12} />
+                            <span className="hidden sm:inline">Set</span>
+                          </button>
                         )}
                       </div>
                     </td>
@@ -796,6 +772,62 @@ export default function UsersClient() {
           </div>
         )}
       </div>
+
+      {setPasswordModal.open && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl p-6 w-full max-w-md">
+            <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">
+              Set Password - {setPasswordModal.nim}
+            </h3>
+            {setPasswordModal.name && (
+              <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
+                Nama: {setPasswordModal.name}
+              </p>
+            )}
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                  Password Baru
+                </label>
+                <input
+                  type="password"
+                  value={setPasswordForm.password}
+                  onChange={(e) => setSetPasswordForm({ ...setPasswordForm, password: e.target.value })}
+                  className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Min. 6 karakter"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">
+                  Konfirmasi Password
+                </label>
+                <input
+                  type="password"
+                  value={setPasswordForm.confirmPassword}
+                  onChange={(e) => setSetPasswordForm({ ...setPasswordForm, confirmPassword: e.target.value })}
+                  className="w-full px-4 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-800 text-neutral-900 dark:text-neutral-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  placeholder="Masukkan kembali password"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setSetPasswordModal({ open: false, nim: '', name: null })}
+                className="px-4 py-2 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 rounded-lg transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSetPassword}
+                disabled={setPasswordLoading}
+                className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 transition-colors"
+              >
+                {setPasswordLoading ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

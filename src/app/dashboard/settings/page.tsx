@@ -76,14 +76,14 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-4">
-        <AccordionItem
+        {/* <AccordionItem
           title="Password Admin"
           description="Ubah password untuk login admin"
           isOpen={openSection === 'password'}
           onToggle={() => toggleSection('password')}
         >
           <SetPasswordCard />
-        </AccordionItem>
+        </AccordionItem> */}
 
         {isSuperAdmin && (
           <AccordionItem
@@ -106,8 +106,8 @@ export default function SettingsPage() {
         </AccordionItem>
 
         <AccordionItem
-          title="Publikasi Hasil"
-          description="Kontrol kapan hasil ditampilkan di landing page"
+          title="Update Hasil"
+          description="Update hasil perolehan suara"
           isOpen={openSection === 'results'}
           onToggle={() => toggleSection('results')}
         >

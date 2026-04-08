@@ -157,9 +157,37 @@ export async function PUT(request: Request) {
     }
     
     // Handle isOpen update
-    const isOpen = Boolean(body?.isOpen)
-    const settings = await setElectionOpen(isOpen)
-    return NextResponse.json(formatElectionSettings(settings))
+    if ('isOpen' in body) {
+      const newIsOpen = Boolean(body.isOpen)
+      const settings = await getElectionSettings()
+      
+      // Require password for changing isOpen
+      if (!body.password) {
+        return NextResponse.json(
+          { error: 'Password sistem diperlukan.' },
+          { status: 400 },
+        )
+      }
+
+      const storedPassword = (settings as any)?.publishPassword
+      if (!storedPassword) {
+        return NextResponse.json(
+          { error: 'Password sistem belum dikonfigurasi.' },
+          { status: 500 },
+        )
+      }
+
+      const isValid = await bcrypt.compare(body.password, storedPassword)
+      if (!isValid) {
+        return NextResponse.json(
+          { error: 'Password sistem salah.' },
+          { status: 401 },
+        )
+      }
+
+      const updated = await setElectionOpen(newIsOpen)
+      return NextResponse.json(formatElectionSettings(updated))
+    }
   } catch (error) {
     console.error('Error updating election settings:', error)
     return NextResponse.json({ error: 'Terjadi kesalahan server.' }, { status: 500 })

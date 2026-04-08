@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
 
 // POST - Toggle admin status for a user
 export async function POST(request: Request) {
@@ -27,14 +26,12 @@ export async function POST(request: Request) {
     }
 
     if (isAdmin) {
-      // Add to admin with default password "pemilu2026"
+      // Add to admin without default password
       try {
-        const defaultPassword = await bcrypt.hash('pemilu2026', 10);
         await prisma.admin.create({
           data: {
             nim,
-            email: `${nim}@mahasiswa.itb.ac.id`,
-            password: defaultPassword
+            email: `${nim}@mahasiswa.itb.ac.id`
           }
         });
       } catch (e: any) {

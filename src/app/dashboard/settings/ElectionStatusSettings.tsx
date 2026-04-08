@@ -37,6 +37,7 @@ export default function ElectionStatusSettings() {
   const [countdownType, setCountdownType] = useState<'start' | 'end'>('end')
   const [showPasswordModal, setShowPasswordModal] = useState(false)
   const [pendingVoteButtonState, setPendingVoteButtonState] = useState<VoteButtonState | null>(null)
+  const [pendingAction, setPendingAction] = useState<'open' | 'close' | null>(null)
   const [password, setPassword] = useState('')
 
   const load = async () => {
@@ -68,23 +69,46 @@ export default function ElectionStatusSettings() {
     void load()
   }, [])
 
+  const handleOpenClick = () => {
+    setPendingAction('open')
+    setShowPasswordModal(true)
+  }
+
+  const handleCloseClick = () => {
+    setPendingAction('close')
+    setShowPasswordModal(true)
+  }
+
   const setOpen = async (isOpen: boolean) => {
-    if (!data) return
     setSaving(true)
     setError(null)
     try {
       const res = await fetch('/api/settings/election', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isOpen }),
+        body: JSON.stringify({ isOpen, password }),
       })
-      if (!res.ok) throw new Error('Gagal menyimpan status pemilihan.')
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Gagal menyimpan status pemilihan.')
+      }
       const json = (await res.json()) as ElectionSettings
       setData(json)
     } catch (e: any) {
       setError(e?.message ?? 'Terjadi kesalahan.')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const confirmWithPassword = async () => {
+    if (pendingAction === 'open' || pendingAction === 'close') {
+      await setOpen(pendingAction === 'open')
+      setShowPasswordModal(false)
+      setPassword('')
+      setPendingAction(null)
+    } else if (pendingVoteButtonState) {
+      await setVoteButtonState(pendingVoteButtonState, password)
     }
   }
 
@@ -202,7 +226,7 @@ export default function ElectionStatusSettings() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setOpen(true)}
+            onClick={handleOpenClick}
             disabled={loading || saving || data?.isOpen === true}
             className={`px-4 py-2 rounded-xl text-sm font-medium border shadow-sm ${
               data?.isOpen
@@ -213,7 +237,7 @@ export default function ElectionStatusSettings() {
             Buka
           </button>
           <button
-            onClick={() => setOpen(false)}
+            onClick={handleCloseClick}
             disabled={loading || saving || data?.isOpen === false}
             className={`px-4 py-2 rounded-xl text-sm font-medium border shadow-sm ${
               data && !data.isOpen
@@ -421,11 +445,12 @@ export default function ElectionStatusSettings() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') setVoteButtonState(pendingVoteButtonState!, password)
+                  if (e.key === 'Enter') confirmWithPassword()
                   if (e.key === 'Escape') {
                     setShowPasswordModal(false)
                     setPassword('')
                     setPendingVoteButtonState(null)
+                    setPendingAction(null)
                   }
                 }}
                 placeholder="Masukkan password"
@@ -446,6 +471,7 @@ export default function ElectionStatusSettings() {
                   setShowPasswordModal(false)
                   setPassword('')
                   setPendingVoteButtonState(null)
+                  setPendingAction(null)
                 }}
                 disabled={saving}
                 className="flex-1 px-4 py-2 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-lg font-medium transition-colors disabled:opacity-50"
@@ -453,7 +479,7 @@ export default function ElectionStatusSettings() {
                 Batal
               </button>
               <button
-                onClick={() => setVoteButtonState(pendingVoteButtonState!, password)}
+                onClick={confirmWithPassword}
                 disabled={saving || !password.trim()}
                 className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
               >

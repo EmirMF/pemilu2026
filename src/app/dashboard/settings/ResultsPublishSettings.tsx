@@ -108,9 +108,9 @@ export default function ResultsPublishSettings() {
       )}
 
       <div>
-        <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 mb-1">Publikasi Hasil Pemilihan</div>
+        <div className="text-sm font-semibold text-neutral-800 dark:text-neutral-100 mb-1">Update Hasil Pemilihan</div>
         <div className="text-sm text-neutral-600 dark:text-neutral-400 mb-4">
-          Kontrol penuh kapan hasil ditampilkan di landing page. Snapshot akan dibuat dari data real-time saat ini.
+          Update suara hasil pemilihan. Snapshot akan dibuat dari data real-time saat ini.
         </div>
       </div>
 
@@ -137,7 +137,7 @@ export default function ResultsPublishSettings() {
                     </span>
                   </div>
                   <div className="text-xs text-blue-600 dark:text-blue-500 mt-2">
-                    Landing page menampilkan snapshot hasil. Data real-time masih berjalan di background.
+                    Dashboard menampilkan snapshot hasil. Data real-time masih berjalan di background.
                   </div>
                 </div>
               </div>
@@ -178,7 +178,7 @@ export default function ResultsPublishSettings() {
                 disabled={publishing}
                 className="px-5 py-2.5 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                Batalkan Publikasi
+                Batalkan Snapshot
               </button>
             )}
           </div>
@@ -186,10 +186,10 @@ export default function ResultsPublishSettings() {
           <div className="text-xs text-neutral-500 dark:text-neutral-400 space-y-1">
             <p>💡 <span className="font-semibold">Tips:</span></p>
             <ul className="list-disc list-inside space-y-1 ml-2">
-              <li>Publikasikan hasil untuk membuat snapshot yang ditampilkan di landing page</li>
+              <li>Perbarui snapshot untuk membuat snapshot baru</li>
               <li>Snapshot tidak akan berubah meskipun ada suara baru masuk</li>
               <li>Perbarui snapshot kapan saja untuk menampilkan data terbaru</li>
-              <li>Batalkan publikasi untuk kembali ke mode real-time</li>
+              <li>Batalkan snapshot untuk kembali ke mode real-time</li>
             </ul>
           </div>
         </>
@@ -205,7 +205,7 @@ export default function ResultsPublishSettings() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100">
-                  {actionType === 'publish' ? 'Publikasikan Hasil' : 'Batalkan Publikasi'}
+                  {actionType === 'publish' ? 'Update Hasil' : 'Batalkan Snapshot'}
                 </h3>
                 <p className="text-sm text-neutral-600 dark:text-neutral-400">Masukkan password untuk konfirmasi</p>
               </div>
@@ -219,7 +219,7 @@ export default function ResultsPublishSettings() {
 
             <div className="mb-4">
               <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
-                Password Publikasi Hasil
+                Password Sistem
               </label>
               <input
                 type="password"

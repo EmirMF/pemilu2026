@@ -54,26 +54,32 @@ export async function POST(request: Request) {
       where: { nim },
     });
 
-    if (!admin) {
-      return NextResponse.json(
-        { error: "NIM tidak terdaftar sebagai admin" },
-        { status: 401 }
-      );
+    let isAdmin = false;
+    let isPasswordValid = false;
+
+    if (admin) {
+      if (admin.password) {
+        isPasswordValid = await bcrypt.compare(password, admin.password);
+      }
+      if (isPasswordValid) {
+        isAdmin = true;
+      }
     }
 
-    if (!admin.password) {
-      return NextResponse.json(
-        { error: "Password belum diatur untuk admin ini" },
-        { status: 401 }
-      );
-    }
+    // If not admin or admin password doesn't match, check voter table
+    if (!isPasswordValid) {
+      const voter = await prisma.voter.findUnique({
+        where: { nim },
+      });
 
-    // Check admin password
-    const isPasswordValid = await bcrypt.compare(password, admin.password);
+      if (voter && voter.password) {
+        isPasswordValid = await bcrypt.compare(password, voter.password);
+      }
+    }
 
     if (!isPasswordValid) {
       return NextResponse.json(
-        { error: "Password salah" },
+        { error: "NIM atau password salah" },
         { status: 401 }
       );
     }
@@ -84,8 +90,8 @@ export async function POST(request: Request) {
     const response = NextResponse.json({
       success: true,
       message: "Login berhasil",
-      isAdmin: true,
-      redirectTo: "/dashboard",
+      isAdmin: isAdmin,
+      redirectTo: isAdmin ? "/dashboard" : "/",
     });
 
     response.cookies.set("voter_session", signedSession, {
