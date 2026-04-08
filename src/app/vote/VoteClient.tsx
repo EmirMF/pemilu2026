@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from '@/components/ui/Button';
 import ThemeToggle from '@/components/ThemeToggle';
-import { Image as ImageIcon, Link as LinkIcon, X, ArrowRight, User, UserCircle, Info } from 'lucide-react';
+import { Image as ImageIcon, Link as LinkIcon, X, ArrowRight, User, UserCircle, Info, AlertTriangle } from 'lucide-react';
 
 type Candidate = {
   id: string;
@@ -23,6 +23,7 @@ export default function VoteClient({ candidates }: { candidates: Candidate[] }) 
   const [agreed, setAgreed] = useState(false);
   const [userNim, setUserNim] = useState<string | null>(null);
   const [showAnonymousInfo, setShowAnonymousInfo] = useState(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   useEffect(() => {
     // Fetch user session
@@ -55,6 +56,7 @@ export default function VoteClient({ candidates }: { candidates: Candidate[] }) 
         throw new Error(data.error || 'Gagal mengirim suara');
       }
 
+      setShowConfirmModal(false);
       window.location.reload(); // Reload to show the "already voted" success screen
     } catch (err: any) {
       setError(err.message);
@@ -183,9 +185,9 @@ export default function VoteClient({ candidates }: { candidates: Candidate[] }) 
 
       <div className="flex justify-center">
         <Button
-          onClick={handleVote}
+          onClick={() => setShowConfirmModal(true)}
           disabled={!selectedId || !agreed || loading}
-          className={`px-12 py-4 text-md ${(!selectedId || !agreed) ? 'opacity-50 cursor-not-allowed' : ''}`}
+          className={`rounded-2xl! px-12 py-4 text-md ${(!selectedId || !agreed) ? 'opacity-50 cursor-not-allowed' : ''}`}
         >
           {loading ? 'Memproses...' : 'Kirim Suara'}
         </Button>
@@ -273,6 +275,84 @@ export default function VoteClient({ candidates }: { candidates: Candidate[] }) 
                     Draf kandidat belum tersedia
                   </div>
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Confirmation Modal */}
+      <AnimatePresence>
+        {showConfirmModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/80"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowConfirmModal(false)}
+          >
+            <motion.div
+              className="bg-white dark:bg-neutral-900 rounded-3xl max-w-md w-full border border-primary-200 dark:border-neutral-700 shadow-2xl"
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 bg-secondary-100 dark:bg-secondary-900/30 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="text-secondary-600" size={24} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-50">
+                      Konfirmasi Suara
+                    </h3>
+                    <p className="text-sm text-neutral-600 dark:text-neutral-400">Pastikan pilihan Anda sudah benar</p>
+                  </div>
+                </div>
+
+                <div className="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-4 mb-4">
+                  <p className="text-neutral-700 dark:text-neutral-300 text-center text-lg font-medium">
+                    Anda memilih: <span className="text-secondary-600 dark:text-secondary-400 font-bold">{candidates.find(c => c.id === selectedId)?.name}</span>
+                  </p>
+                </div>
+
+                <p className="text-sm text-neutral-600 dark:text-neutral-400 mb-6 text-center">
+                  Suara yang sudah diberikan tidak dapat diubah. Apakah Anda yakin ingin melanjutkan?
+                </p>
+
+                {error && (
+                  <div className="bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg p-3 text-sm mb-4">
+                    {error}
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowConfirmModal(false)}
+                    disabled={loading}
+                    className="flex-1 px-4 py-3 bg-neutral-100 dark:bg-neutral-800 hover:bg-neutral-200 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300 rounded-xl font-medium transition-colors disabled:opacity-50"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleVote}
+                    disabled={loading}
+                    className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {loading ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Memproses...
+                      </>
+                    ) : (
+                      'Ya, Kirim Suara'
+                    )}
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>
