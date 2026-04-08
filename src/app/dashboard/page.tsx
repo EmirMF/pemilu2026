@@ -59,6 +59,19 @@ export default async function DashboardPage() {
     lastUpdate = lastVote?.createdAt.toISOString() || null
   }
   
+  // Format lastUpdate di server agar konsisten
+  let formattedLastUpdate: string | null = null
+  if (lastUpdate) {
+    formattedLastUpdate = new Date(lastUpdate).toLocaleString('id-ID', { 
+      day: '2-digit', 
+      month: 'short', 
+      year: 'numeric',
+      hour: '2-digit', 
+      minute: '2-digit',
+      timeZone: 'Asia/Jakarta',
+    })
+  }
+  
   const totalVotes = candidateRows.reduce((acc, r) => acc + r.voteCount, 0)
   
   const voterStats = {
@@ -74,7 +87,7 @@ export default async function DashboardPage() {
       totalVotes={totalVotes} 
       isOpen={settings.isOpen}
       voterStats={voterStats}
-      lastUpdate={lastUpdate}
+      lastUpdate={formattedLastUpdate}
     />
   )
 }
