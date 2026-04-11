@@ -15,6 +15,7 @@ type ResultCandidate = {
   name: string
   vision: string
   mission: string | null
+  major?: string | null
   photo: string | null
   draftLink: string | null
 }
@@ -81,6 +82,7 @@ export default function LandingPage() {
             name: c.name,
             vision: c.vision,
             mission: c.mission,
+            major: c.major,
             photo: c.photo,
             draftLink: c.draftLink,
           })),

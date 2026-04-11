@@ -6,6 +6,7 @@ import Image from 'next/image'
 type ResultCandidate = {
   id: string
   name: string
+  major?: string | null
   photo: string | null
   voteCount: number
   percentage: number
@@ -101,7 +102,17 @@ export default function ResultsSection() {
                       <h3 className="text-lg md:text-xl font-bold text-neutral-900 dark:text-neutral-100 truncate">
                         {candidate.name}
                       </h3>
+                      {candidate.major && (
+                        <span className="text-sm text-neutral-500 dark:text-neutral-400 hidden md:inline">
+                          {candidate.major}
+                        </span>
+                      )}
                     </div>
+                    {candidate.major && (
+                      <div className="md:hidden text-sm text-neutral-500 dark:text-neutral-400 mb-1">
+                        {candidate.major}
+                      </div>
+                    )}
                     
                     <div className="h-4 md:h-6 bg-neutral-100 dark:bg-neutral-700 rounded-full overflow-hidden mb-1 md:mb-2">
                       <div

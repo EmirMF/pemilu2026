@@ -9,6 +9,7 @@ type Candidate = {
   name: string;
   vision: string;
   mission: string | null;
+  major: string | null;
   photo: string | null;
   draftLink: string | null;
   isHidden: boolean;
@@ -27,6 +28,7 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
     name: '',
     vision: '',
     mission: '',
+    major: '',
     photo: '',
     draftLink: '',
     isHidden: false
@@ -39,13 +41,14 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
         name: candidate.name,
         vision: candidate.vision,
         mission: candidate.mission || '',
+        major: candidate.major || '',
         photo: candidate.photo || '',
         draftLink: candidate.draftLink || '',
         isHidden: candidate.isHidden || false
       });
     } else {
       setEditingCandidate(null);
-      setFormData({ name: '', vision: '', mission: '', photo: '', draftLink: '', isHidden: false });
+      setFormData({ name: '', vision: '', mission: '', major: '', photo: '', draftLink: '', isHidden: false });
     }
     setIsModalOpen(true);
   };
@@ -199,7 +202,7 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-neutral-800 dark:text-neutral-100">{candidate.name}</h3>
-                    {/* <p className="text-sm font-medium text-neutral-500 dark:text-neutral-400 dark:text-neutral-500">{ } Suara</p> */}
+                    {candidate.major && <p className="text-sm text-neutral-500 dark:text-neutral-400">{candidate.major}</p>}
                   </div>
                 </div>
               </div>
@@ -352,6 +355,16 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
                   className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
                   placeholder="Tuliskan visi kandidat..."
                 ></textarea>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Jurusan</label>
+                <input
+                  type="text"
+                  value={formData.major} onChange={e => setFormData({ ...formData, major: e.target.value })}
+                  className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                  placeholder="Contoh: Teknik Informatika"
+                />
               </div>
 
               <div>

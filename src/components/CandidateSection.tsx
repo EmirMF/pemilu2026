@@ -10,6 +10,7 @@ type Candidate = {
   name: string
   vision: string
   mission?: string | null
+  major?: string | null
   photo: string | null
   draftLink?: string | null
 }
@@ -54,9 +55,17 @@ export default function CandidateSection({ candidates }: { candidates: Candidate
                     </div>
                   </div>
                 )}
-                <div className="p-8 flex-1 flex flex-col">
-                  <h3 className="text-2xl font-bold mb-2">{candidate.name}</h3>
-                  <p className="text-neutral-600 dark:text-neutral-400 mb-6 text-sm flex-1">{candidate.vision}</p>
+                <div className="p-6 flex-1 flex flex-col">
+                  <div className="flex flex-col items-center gap-0 mb-2">
+                    <span className="w-8 h-8 rounded-full bg-gradient-to-r from-red-600 to-orange-500 text-white flex items-center justify-center text-sm font-bold">
+                      {i + 1}
+                    </span>
+                    <h3 className="text-2xl font-bold text-center mt-3">{candidate.name}</h3>
+                    {candidate.major && (
+                      <span className="text-sm mb-2 text-red-500 dark:text-red-400">{candidate.major}</span>
+                    )}
+                  </div>
+                  <p className="text-neutral-600 dark:text-neutral-400 mb-6 text-sm flex-1 text-center">{candidate.vision}</p>
                   <button
                     type="button"
                     onClick={() => setSelectedCandidate(candidate)}
@@ -107,7 +116,7 @@ export default function CandidateSection({ candidates }: { candidates: Candidate
               <div className="p-6">
                 {/* Photo */}
                 {selectedCandidate.photo ? (
-                  <div className="w-full h-80 bg-cream-100 dark:bg-neutral-800 rounded-2xl overflow-hidden mb-6">
+                  <div className="w-full h-100 bg-cream-100 dark:bg-neutral-800 rounded-2xl overflow-hidden mb-6">
                     <img
                       src={selectedCandidate.photo}
                       draggable="false"
@@ -126,7 +135,8 @@ export default function CandidateSection({ candidates }: { candidates: Candidate
                 )}
 
                 {/* Name */}
-                <h4 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50 mb-4">{selectedCandidate.name}</h4>
+                <h4 className="text-3xl font-bold text-neutral-900 dark:text-neutral-50">{selectedCandidate.name}</h4>
+                {selectedCandidate.major && <p className="text-neutral-400 dark:text-neutral-300 mb-4">{selectedCandidate.major}</p>}
 
                 {/* Vision */}
                 <div className="mb-6">

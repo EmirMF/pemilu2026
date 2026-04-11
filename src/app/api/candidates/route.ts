@@ -41,7 +41,7 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { name, vision, mission, photo, draftLink, isHidden } = body;
+    const { name, vision, mission, major, photo, draftLink, isHidden } = body;
 
     if (!name || !vision) {
       return NextResponse.json({ error: 'Nama dan Visi wajib diisi.' }, { status: 400 });
@@ -52,6 +52,7 @@ export async function POST(request: Request) {
         name,
         vision,
         mission,
+        major,
         photo,
         draftLink,
         isHidden: isHidden || false

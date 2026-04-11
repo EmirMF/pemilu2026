@@ -36,6 +36,7 @@ model Candidate {
   name        String
   vision      String
   mission     String?
+  major      String?
   photo       String?
   draftLink   String?
   isHidden    Boolean      @default(false)
