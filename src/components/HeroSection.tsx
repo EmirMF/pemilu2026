@@ -5,25 +5,13 @@ import { useState, useEffect } from 'react';
 import Button from './ui/Button';
 import ShinyText from './ShinyText';
 
-type VoteButtonState = 'default' | 'before' | 'after' | 'hidden'
+type VoteButtonState = 'default' | 'before' | 'hidden'
 
 export default function HeroSection({
   electionIsOpen,
-  totalVotes,
-  isSnapshot,
-  publishedAt,
-  showTotalVotes = true,
-  showVotingStatus = true,
-  showUserVoteStatus = true,
   voteButtonState = 'default',
 }: {
   electionIsOpen: boolean | null
-  totalVotes: number | null
-  isSnapshot?: boolean
-  publishedAt?: string | null
-  showTotalVotes?: boolean
-  showVotingStatus?: boolean
-  showUserVoteStatus?: boolean
   voteButtonState?: VoteButtonState
 }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -81,14 +69,6 @@ export default function HeroSection({
       }
     }
 
-    if (voteButtonState === 'after') {
-      return {
-        label: 'Lihat Hasil',
-        onClick: scrollToResults,
-        disabled: false,
-      }
-    }
-
     return {
       label: isAuthenticated ? 'Vote Sekarang' : 'Login untuk Vote',
       onClick: handleVoteClick,
@@ -139,58 +119,10 @@ export default function HeroSection({
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.2 }}
         >
-          Pemilihan Umum General Manager 8EH Radio ITB 2026/2027
+Pemilihan Umum General Manager 8EH Radio ITB 2026/2027
         </motion.p>
 
-        {!isLoading && (showVotingStatus || (showUserVoteStatus && isAuthenticated) || showTotalVotes) && (
-          <motion.div
-            className="flex items-center justify-center gap-3 mb-8 flex-wrap"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.35 }}
-          >
-            {showVotingStatus && (
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                  electionIsOpen === null
-                    ? 'bg-cream-200 dark:bg-cream-800 text-neutral-700 dark:text-neutral-300 border-cream-400 dark:border-cream-600'
-                    : electionIsOpen
-                      ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 border-green-300 dark:border-green-700'
-                      : 'bg-neutral-200 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border-neutral-400 dark:border-neutral-600'
-                }`}
-              >
-                {electionIsOpen === null ? 'Status: Memuat…' : electionIsOpen ? 'Status: Voting Dibuka' : 'Status: Voting Ditutup'}
-              </span>
-            )}
-            {showUserVoteStatus && isAuthenticated && hasVoted !== null && (
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-medium border ${
-                  hasVoted
-                    ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 border-blue-300 dark:border-blue-700'
-                    : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700'
-                }`}
-              >
-                {hasVoted ? 'Anda sudah vote' : 'Anda belum vote'}
-              </span>
-            )}
-            {showTotalVotes && (
-              <span className="px-3 py-1 rounded-full text-sm font-medium border bg-cream-200 dark:bg-cream-800 text-neutral-700 dark:text-neutral-300 border-cream-400 dark:border-cream-600">
-                Total suara: {totalVotes === null ? '…' : totalVotes}
-                {isSnapshot && publishedAt && (
-                  <span className="text-xs ml-1 opacity-75">
-                    (Updated {new Date(publishedAt).toLocaleString('id-ID', {
-                      day: '2-digit',
-                      month: '2-digit',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })})
-                  </span>
-                )}
-              </span>
-            )}
-          </motion.div>
-        )}
+        {/* Badges removed */}
 
         {ctaConfig && (
           <motion.div

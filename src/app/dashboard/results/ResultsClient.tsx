@@ -114,6 +114,7 @@ export default function ResultsClient() {
         qs.set('skip', String(skip))
       }
       qs.set('includeHidden', '1')
+      qs.set('realtime', '1')
       const res = await fetch(`/api/results${qs.toString() ? `?${qs.toString()}` : ''}`, { cache: 'no-store' })
       if (!res.ok) throw new Error('Gagal mengambil data hasil.')
       const json = (await res.json()) as ResultsResponse

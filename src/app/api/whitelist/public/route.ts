@@ -7,23 +7,13 @@ export async function GET(request: Request) {
     const search = url.searchParams.get('search') || ''
 
     const whereClause: any = {
-      isInDPT: true, // Only show users who are in DPT
+      isInDPT: true,
     }
 
     if (search) {
-      // Search by NIM or name
       whereClause.OR = [
-        {
-          nim: {
-            contains: search,
-          },
-        },
-        {
-          name: {
-            contains: search,
-            mode: 'insensitive',
-          },
-        },
+        { nim: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
       ]
     }
 

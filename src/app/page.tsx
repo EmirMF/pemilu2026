@@ -4,7 +4,6 @@ import Grainient from '@/components/Grainient';
 import Navbar from '@/components/Navbar';
 import HeroSection from '@/components/HeroSection';
 import CandidateSection from '@/components/CandidateSection';
-import ResultsSection from '@/components/ResultsSection';
 import CountdownSection from '@/components/CountdownSection';
 import TimelineSection from '@/components/TimelineSection';
 import { useEffect, useState } from 'react';
@@ -23,41 +22,25 @@ type ResultCandidate = {
 type ResultsResponse = {
   election: {
     isOpen: boolean
-    updatedAt: string
     countdownEnd: string | null
     countdownType: string | null
-    resultsPublished: boolean
-    resultsPublishedAt: string | null
-    showTotalVotes: boolean
-    showVotingStatus: boolean
-    showUserVoteStatus: boolean
-    voteButtonState: 'default' | 'before' | 'after' | 'hidden'
+    voteButtonState: 'default' | 'before' | 'hidden'
   }
-  totals: { totalVotes: number }
-  candidates: Array<ResultCandidate & { voteCount: number; percentage: number }>
-  isSnapshot: boolean
+  candidates: Array<ResultCandidate>
 }
 
 export default function LandingPage() {
   const [electionIsOpen, setElectionIsOpen] = useState<boolean | null>(null)
-  const [totalVotes, setTotalVotes] = useState<number | null>(null)
   const [countdownEnd, setCountdownEnd] = useState<string | null>(null)
   const [countdownType, setCountdownType] = useState<string | null>(null)
   const [candidates, setCandidates] = useState<ResultCandidate[]>([])
-  const [isSnapshot, setIsSnapshot] = useState(false)
-  const [publishedAt, setPublishedAt] = useState<string | null>(null)
-  const [showTotalVotes, setShowTotalVotes] = useState(true)
-  const [showVotingStatus, setShowVotingStatus] = useState(true)
-  const [showUserVoteStatus, setShowUserVoteStatus] = useState(true)
-  const [voteButtonState, setVoteButtonState] = useState<'default' | 'before' | 'after' | 'hidden'>('default')
+  const [voteButtonState, setVoteButtonState] = useState<'default' | 'before' | 'hidden'>('default')
   
-  // Get theme
   let theme = 'light'
   try {
     const themeContext = useTheme()
     theme = themeContext.theme
   } catch {
-    // Not in ThemeProvider
   }
 
   useEffect(() => {
@@ -67,14 +50,8 @@ export default function LandingPage() {
         if (!res.ok) return
         const json = (await res.json()) as ResultsResponse
         setElectionIsOpen(json.election.isOpen)
-        setTotalVotes(json.totals.totalVotes)
         setCountdownEnd(json.election.countdownEnd)
         setCountdownType(json.election.countdownType)
-        setIsSnapshot(json.isSnapshot || false)
-        setPublishedAt(json.election.resultsPublishedAt)
-        setShowTotalVotes(json.election.showTotalVotes ?? true)
-        setShowVotingStatus(json.election.showVotingStatus ?? true)
-        setShowUserVoteStatus(json.election.showUserVoteStatus ?? true)
         setVoteButtonState(json.election.voteButtonState ?? 'default')
         setCandidates(
           (json.candidates ?? []).map((c) => ({
@@ -88,7 +65,6 @@ export default function LandingPage() {
           })),
         )
       } catch {
-        // keep landing page usable even if API fails
       }
     }
     void run()
@@ -127,22 +103,10 @@ export default function LandingPage() {
       <Navbar />
       <HeroSection
         electionIsOpen={electionIsOpen}
-        totalVotes={totalVotes}
-        isSnapshot={isSnapshot}
-        publishedAt={publishedAt}
-        showTotalVotes={showTotalVotes}
-        showVotingStatus={showVotingStatus}
-        showUserVoteStatus={showUserVoteStatus}
         voteButtonState={voteButtonState}
       />
-      {voteButtonState === 'after' ? (
-        <ResultsSection />
-      ) : (
-        <>
-          <CandidateSection candidates={candidates} />
-          <CountdownSection countdownEnd={countdownEnd} countdownType={countdownType} />
-        </>
-      )}
+      <CandidateSection candidates={candidates} />
+      <CountdownSection countdownEnd={countdownEnd} countdownType={countdownType} />
       <TimelineSection />
     </main>
     </>

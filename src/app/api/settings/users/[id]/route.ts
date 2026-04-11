@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { checkAdminAuth } from '@/lib/adminAuth';
+import { createAuditLog } from '@/lib/auditLog';
 
 // PATCH - Update user name
 export async function PATCH(
@@ -7,6 +9,11 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const { name } = await request.json();
 
@@ -38,6 +45,17 @@ export async function PATCH(
       // Admin might not exist
     }
 
+    await createAuditLog({
+      action: 'USER_UPDATED',
+      actorNim: auth.nim,
+      actorEmail: auth.email,
+      actorRole: 'ADMIN',
+      targetId: id,
+      targetType: 'VOTER',
+      details: { name },
+      status: 'SUCCESS',
+    });
+
     return NextResponse.json({ success: true, name: name || null });
   } catch (error) {
     console.error('Error updating user name:', error);
@@ -54,6 +72,11 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
 
     // Get the voter entry to find the NIM
@@ -80,6 +103,17 @@ export async function DELETE(
     // Delete from voter
     await prisma.voter.delete({
       where: { id }
+    });
+
+    await createAuditLog({
+      action: 'USER_DELETED',
+      actorNim: auth.nim,
+      actorEmail: auth.email,
+      actorRole: 'ADMIN',
+      targetId: id,
+      targetType: 'VOTER',
+      details: { deletedNim: voter.nim },
+      status: 'SUCCESS',
     });
 
     return NextResponse.json({ success: true });

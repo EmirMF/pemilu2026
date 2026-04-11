@@ -1,6 +1,10 @@
 import crypto from 'crypto'
 
-const COOKIE_SECRET = process.env.COOKIE_SECRET || 'default-cookie-secret-change-in-production'
+const COOKIE_SECRET = process.env.COOKIE_SECRET
+
+if (!COOKIE_SECRET) {
+  throw new Error('COOKIE_SECRET environment variable is required')
+}
 
 export function signCookie(value: string): string {
   const signature = crypto

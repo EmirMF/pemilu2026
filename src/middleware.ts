@@ -14,7 +14,6 @@ export function middleware(request: NextRequest) {
   const publicRoutes = [
     '/login',
     '/api/auth/sso',
-    '/api/auth/check-password',
     '/api/auth/login-password',
     '/api/auth/set-password',
   ];

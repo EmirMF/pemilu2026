@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { checkAdminAuth } from '@/lib/adminAuth';
+import { createAuditLog } from '@/lib/auditLog';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -8,11 +10,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       where: { id }
     });
 
-    if (!candidate) {
+    if (!candidate || candidate.isHidden) {
       return NextResponse.json({ error: 'Kandidat tidak ditemukan.' }, { status: 404 });
     }
 
-    return NextResponse.json(candidate);
+    const { isHidden, ...safeCandidate } = candidate;
+    return NextResponse.json(safeCandidate);
   } catch (error) {
     console.error('Error fetching candidate:', error);
     return NextResponse.json({ error: 'Terjadi kesalahan saat mengambil data kandidat.' }, { status: 500 });
@@ -21,6 +24,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const { name, vision, mission, major, photo, draftLink, isHidden } = body;
@@ -38,6 +46,16 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
       }
     });
 
+    await createAuditLog({
+      action: 'CANDIDATE_UPDATED',
+      actorNim: auth.nim,
+      actorEmail: auth.email,
+      actorRole: 'ADMIN',
+      targetId: id,
+      targetType: 'CANDIDATE',
+      status: 'SUCCESS',
+    });
+
     return NextResponse.json(candidate);
   } catch (error) {
     console.error('Error updating candidate:', error);
@@ -47,9 +65,24 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
 export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
     const { id } = await params;
     await prisma.candidate.delete({
       where: { id }
+    });
+
+    await createAuditLog({
+      action: 'CANDIDATE_DELETED',
+      actorNim: auth.nim,
+      actorEmail: auth.email,
+      actorRole: 'ADMIN',
+      targetId: id,
+      targetType: 'CANDIDATE',
+      status: 'SUCCESS',
     });
 
     return NextResponse.json({ success: true, message: 'Kandidat berhasil dihapus.' });

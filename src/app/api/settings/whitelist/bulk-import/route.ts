@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { createAuditLog } from '@/lib/auditLog';
+import { checkAdminAuth } from '@/lib/adminAuth';
 
 export async function POST(request: Request) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
     const { voters } = await request.json();
     
     if (!Array.isArray(voters) || voters.length === 0) {
@@ -68,6 +74,8 @@ export async function POST(request: Request) {
     // Audit log
     await createAuditLog({
       action: 'BULK_IMPORT_DPT',
+      actorNim: auth.nim,
+      actorEmail: auth.email,
       actorRole: 'ADMIN',
       status: 'SUCCESS',
       details: {

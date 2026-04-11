@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { rateLimit } from '@/lib/rateLimit';
+import { checkAdminAuth } from '@/lib/adminAuth';
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
     const { email } = await req.json();
 
     if (!email || typeof email !== 'string') {

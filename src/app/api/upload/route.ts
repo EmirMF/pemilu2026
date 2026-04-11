@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { v2 as cloudinary } from 'cloudinary';
+import { checkAdminAuth } from '@/lib/adminAuth';
 
 // Configure Cloudinary
 cloudinary.config({
@@ -10,6 +11,11 @@ cloudinary.config({
 
 export async function POST(request: Request) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
     const { file } = await request.json();
 
     if (!file) {

@@ -1,29 +1,20 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getCacheOrSet, deleteCache } from '@/lib/cache';
+import { checkAdminAuth } from '@/lib/adminAuth';
+import { createAuditLog } from '@/lib/auditLog';
 
 export async function GET() {
   try {
     const candidates = await getCacheOrSet(
-      'candidates:list',
+      'candidates:list:public',
       async () => {
         const candidates = await prisma.candidate.findMany({
+          where: { isHidden: false },
           orderBy: { id: 'asc' },
-          include: {
-            _count: {
-              select: { VoteRecords: true }
-            }
-          }
         });
         
-        const mappedCandidates = candidates.map(candidate => ({
-          ...candidate,
-          voteCount: candidate._count.VoteRecords
-        }));
-        
-        mappedCandidates.forEach(c => delete (c as any)._count);
-        
-        return mappedCandidates;
+        return candidates;
       },
       { ttl: 60 }
     );
@@ -40,6 +31,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { name, vision, mission, major, photo, draftLink, isHidden } = body;
 
@@ -60,6 +56,16 @@ export async function POST(request: Request) {
     });
 
     await deleteCache('candidates:list');
+
+    await createAuditLog({
+      action: 'CANDIDATE_CREATED',
+      actorNim: auth.nim,
+      actorEmail: auth.email,
+      actorRole: 'ADMIN',
+      targetId: candidate.id,
+      targetType: 'CANDIDATE',
+      status: 'SUCCESS',
+    });
 
     return NextResponse.json(candidate, { status: 201 });
   } catch (error) {

@@ -1,7 +1,11 @@
 import { cookies } from 'next/headers'
 import crypto from 'crypto'
 
-const CSRF_SECRET = process.env.CSRF_SECRET || 'default-csrf-secret-change-in-production'
+const CSRF_SECRET = process.env.CSRF_SECRET
+
+if (!CSRF_SECRET) {
+  throw new Error('CSRF_SECRET environment variable is required')
+}
 
 export async function generateCSRFToken(): Promise<string> {
   const token = crypto.randomBytes(32).toString('hex')

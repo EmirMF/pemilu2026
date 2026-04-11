@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { checkAdminAuth } from '@/lib/adminAuth';
+import { createAuditLog } from '@/lib/auditLog';
 
 // POST - Toggle admin status for a user
 export async function POST(request: Request) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
     const { nim, isAdmin } = await request.json();
 
     if (!nim || typeof nim !== 'string') {
@@ -53,6 +60,16 @@ export async function POST(request: Request) {
         }
       }
     }
+
+    await createAuditLog({
+      action: 'USER_UPDATED',
+      actorNim: auth.nim,
+      actorEmail: auth.email,
+      actorRole: 'ADMIN',
+      targetType: 'ADMIN',
+      details: { targetNim: nim, isAdmin },
+      status: 'SUCCESS',
+    });
 
     return NextResponse.json({ success: true });
   } catch (error) {

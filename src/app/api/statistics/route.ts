@@ -1,8 +1,13 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
+import { checkAdminAuth } from '@/lib/adminAuth';
 
 export async function GET() {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
     // Get total voters in DPT
     const totalDPT = await prisma.voter.count({
       where: { isInDPT: true }

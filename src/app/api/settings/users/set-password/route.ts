@@ -2,9 +2,15 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { createAuditLog } from '@/lib/auditLog';
+import { checkAdminAuth } from '@/lib/adminAuth';
 
 export async function POST(request: Request) {
   try {
+    const auth = await checkAdminAuth();
+    if (!auth.isAdmin) {
+      return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
     const { nim, password } = await request.json();
 
     if (!nim || typeof nim !== 'string') {
@@ -50,6 +56,8 @@ export async function POST(request: Request) {
 
     await createAuditLog({
       action: 'PASSWORD_SET',
+      actorNim: auth.nim,
+      actorEmail: auth.email,
       actorRole: 'ADMIN',
       targetType: 'USER',
       targetId: voter.id,

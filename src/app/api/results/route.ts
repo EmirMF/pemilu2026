@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { getElectionSettings } from '@/lib/election'
-import { getCacheOrSet } from '@/lib/cache'
+import { cookies } from 'next/headers'
+import { verifyCookie } from '@/lib/secureCookie'
 
 function toInt(value: string | null, fallback: number) {
   if (!value) return fallback
@@ -9,175 +10,115 @@ function toInt(value: string | null, fallback: number) {
   return Number.isFinite(n) ? n : fallback
 }
 
+async function checkAdmin(): Promise<boolean> {
+  const cookieStore = await cookies()
+  const signedSession = cookieStore.get('voter_session')?.value
+  if (!signedSession) return false
+  const email = verifyCookie(signedSession)
+  if (!email) return false
+  const nim = email.split('@')[0]
+  const admin = await prisma.admin.findUnique({ where: { nim } })
+  return !!admin
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
-    const includeRecords = url.searchParams.get('includeRecords') === '1'
-    const forceRealtime = url.searchParams.get('realtime') === '1' // Admin can force realtime
-    const includeHidden = url.searchParams.get('includeHidden') === '1'
+    const isAdmin = await checkAdmin()
+    const forceRealtime = isAdmin && url.searchParams.get('realtime') === '1'
+    const includeHidden = isAdmin && url.searchParams.get('includeHidden') === '1'
+    const includeRecords = isAdmin && url.searchParams.get('includeRecords') === '1'
     const take = Math.min(toInt(url.searchParams.get('take'), 50), 200)
     const skip = Math.max(toInt(url.searchParams.get('skip'), 0), 0)
 
-    // Cache key based on query params
-    const cacheKey = `results:${forceRealtime ? 'realtime' : 'snapshot'}:${includeRecords}:${take}:${skip}:${includeHidden}`
-    const cacheTTL = forceRealtime ? 5 : 30 // 5s for realtime, 30s for snapshot
+    const settings = await getElectionSettings()
+    const candidateWhere = includeHidden ? {} : { isHidden: false }
 
-    const result = await getCacheOrSet(
-      cacheKey,
-      async () => {
-        // Count based on isInDPT (eligible voters / DPT)
-        const [settings, totalDPT, totalVoted] = await Promise.all([
-          getElectionSettings(),
-          prisma.voter.count({ where: { isInDPT: true } }),
-          prisma.voter.count({ where: { hasVoted: true, isInDPT: true } }),
-        ])
+    // Admin + realtime = full data
+    if (isAdmin && forceRealtime) {
+      const totalDPT = await prisma.voter.count({ where: { isInDPT: true } })
+      const totalVoted = await prisma.voter.count({ where: { hasVoted: true, isInDPT: true } })
+      
+      const candidates = await prisma.candidate.findMany({
+        where: candidateWhere,
+        orderBy: { id: 'asc' },
+        include: { _count: { select: { VoteRecords: true } } },
+      })
+      const totalVotes = candidates.reduce((acc, c) => acc + c._count.VoteRecords, 0)
 
-        let mappedCandidates: Array<{
-          id: string
-          name: string
-          vision: string
-          mission: string | null
-          photo: string | null
-          draftLink: string | null
-          isHidden: boolean
-          voteCount: number
-        }>
-        let totalVotes: number
-        let isSnapshot = false
-        let lastVoteAt: string | null = null
+      const candidatesData = candidates.map(c => ({
+        id: c.id,
+        name: c.name,
+        vision: c.vision,
+        mission: c.mission,
+        major: c.major,
+        photo: c.photo,
+        draftLink: c.draftLink,
+        isHidden: c.isHidden,
+        voteCount: c._count.VoteRecords,
+        percentage: totalVotes === 0 ? 0 : (c._count.VoteRecords / totalVotes) * 100,
+      }))
 
-        // Candidate filter based on includeHidden
-        const candidateWhere = includeHidden ? {} : { isHidden: false }
+      const lastVote = await prisma.voteRecord.findFirst({
+        orderBy: { createdAt: 'desc' },
+        select: { createdAt: true },
+      })
 
-        // If results are published and not forcing realtime, use snapshot
-        if (settings.resultsPublished && !forceRealtime) {
-          const publishedResults = await prisma.publishedResult.findMany({
-            orderBy: { publishedAt: 'desc' },
-          })
-
-          // Get candidate details
-          const candidates = await prisma.candidate.findMany({
-            where: candidateWhere,
-            orderBy: { id: 'asc' },
-          })
-
-          mappedCandidates = candidates.map((c) => {
-            const published = publishedResults.find((p) => p.candidateId === c.id)
-            return {
-              id: c.id,
-              name: c.name,
-              vision: c.vision,
-              mission: c.mission,
-              major: c.major,
-              photo: c.photo,
-              draftLink: c.draftLink,
-              isHidden: c.isHidden,
-              voteCount: published?.voteCount ?? 0,
-            }
-          })
-
-          totalVotes = publishedResults.reduce((acc, p) => acc + p.voteCount, 0)
-          isSnapshot = true
-          // Use publishedAt from the first published result as last update
-          lastVoteAt = publishedResults[0]?.publishedAt.toISOString() || null
-        } else {
-          // Use realtime data
-          const candidates = await prisma.candidate.findMany({
-            where: candidateWhere,
-            orderBy: { id: 'asc' },
-            include: { _count: { select: { VoteRecords: true } } },
-          })
-
-          mappedCandidates = candidates.map((c) => ({
-            id: c.id,
-            name: c.name,
-            vision: c.vision,
-            mission: c.mission,
-            major: c.major,
-            photo: c.photo,
-            draftLink: c.draftLink,
-            isHidden: c.isHidden,
-            voteCount: c._count.VoteRecords,
-          }))
-
-          totalVotes = mappedCandidates.reduce((acc, c) => acc + c.voteCount, 0)
-          
-          // Get last vote for real-time data
-          const lastVote = await prisma.voteRecord.findFirst({
-            orderBy: { createdAt: 'desc' },
-            select: { createdAt: true },
-          })
-          lastVoteAt = lastVote?.createdAt.toISOString() || null
-        }
-
-        const turnoutPct = totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100
-
-        const candidatesWithPct = mappedCandidates.map((c) => ({
-          ...c,
-          percentage: totalVotes === 0 ? 0 : (c.voteCount / totalVotes) * 100,
+      let records = null
+      if (includeRecords) {
+        const vr = await prisma.voteRecord.findMany({
+          orderBy: { createdAt: 'desc' },
+          take,
+          skip,
+          include: { candidate: { select: { id: true, name: true } } },
+        })
+        records = vr.map(r => ({
+          id: r.id,
+          createdAt: r.createdAt.toISOString(),
+          candidateId: r.candidateId,
+          candidateName: r.candidate.name,
         }))
+      }
 
-        let records: Array<{
-          id: string
-          createdAt: string
-          candidateId: string
-          candidateName: string
-        }> | null = null
+      return NextResponse.json({
+        election: {
+          isOpen: settings.isOpen,
+          updatedAt: settings.updatedAt?.toISOString(),
+          lastVoteAt: lastVote?.createdAt.toISOString() || null,
+        },
+        totals: { totalVotes, totalDPT, totalVoted, turnoutPct: totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100 },
+        candidates: candidatesData,
+        records,
+        pagination: includeRecords ? { take, skip } : null,
+      })
+    }
 
-        if (includeRecords) {
-          const voteRecords = await prisma.voteRecord.findMany({
-            orderBy: { createdAt: 'desc' },
-            take,
-            skip,
-            include: { candidate: { select: { id: true, name: true } } },
-          })
+    // Everyone else gets clean data (no vote counts)
+    const candidates = await prisma.candidate.findMany({
+      where: candidateWhere,
+      orderBy: { id: 'asc' },
+    })
 
-          records = voteRecords.map((r) => ({
-            id: r.id,
-            createdAt: r.createdAt.toISOString(),
-            candidateId: r.candidateId,
-            candidateName: r.candidate.name,
-          }))
-        }
+    const candidatesData = candidates.map(c => ({
+      id: c.id,
+      name: c.name,
+      vision: c.vision,
+      mission: c.mission,
+      major: c.major,
+      photo: c.photo,
+      draftLink: c.draftLink,
+      isHidden: c.isHidden,
+    }))
 
-        const voteButtonState = (settings as { voteButtonState?: string | null }).voteButtonState || 'default'
-
-        // Helper to convert Date to ISO string safely
-        const toISOString = (date: any) => {
-          if (!date) return null
-          if (typeof date === 'string') return date
-          return date.toISOString()
-        }
-
-        return {
-          election: {
-            isOpen: settings.isOpen,
-            updatedAt: toISOString(settings.updatedAt),
-            countdownEnd: toISOString(settings.countdownEnd),
-            countdownType: settings.countdownType || 'end',
-            resultsPublished: settings.resultsPublished,
-            resultsPublishedAt: toISOString(settings.resultsPublishedAt),
-            showTotalVotes: settings.showTotalVotes ?? true,
-            showVotingStatus: (settings as { showVotingStatus?: boolean }).showVotingStatus ?? true,
-            showUserVoteStatus: (settings as { showUserVoteStatus?: boolean }).showUserVoteStatus ?? true,
-            voteButtonState,
-            lastVoteAt,
-          },
-          totals: { totalVotes, totalDPT, totalVoted, turnoutPct },
-          candidates: candidatesWithPct,
-          records,
-          pagination: includeRecords ? { take, skip } : null,
-          isSnapshot,
-        }
+    return NextResponse.json({
+      election: {
+        isOpen: settings.isOpen,
+        countdownEnd: settings.countdownEnd?.toISOString(),
+        voteButtonState: settings.voteButtonState || 'default',
       },
-      { ttl: cacheTTL }
-    )
-
-    // Add cache headers
-    const headers = new Headers()
-    headers.set('Cache-Control', `public, s-maxage=${cacheTTL}, stale-while-revalidate=${cacheTTL * 2}`)
-    
-    return NextResponse.json(result, { headers })
+      totals: null,
+      candidates: candidatesData,
+    })
   } catch (error) {
     console.error('Error fetching results:', error)
     return NextResponse.json({ error: 'Terjadi kesalahan saat mengambil hasil.' }, { status: 500 })

@@ -1,5 +1,6 @@
 import prisma from '@/lib/prisma'
-import { getElectionSettings } from '@/lib/election'
+import { cookies } from 'next/headers'
+import { verifyCookie } from '@/lib/secureCookie'
 
 function csvEscape(value: string) {
   if (value.includes('"') || value.includes(',') || value.includes('\n') || value.includes('\r')) {
@@ -8,14 +9,42 @@ function csvEscape(value: string) {
   return value
 }
 
+async function checkAdminAuth() {
+  const cookieStore = await cookies()
+  const signedSession = cookieStore.get('voter_session')?.value
+
+  if (!signedSession) {
+    return { isAdmin: false, error: 'No session found' }
+  }
+
+  const email = verifyCookie(signedSession)
+  if (!email) {
+    return { isAdmin: false, error: 'Invalid session' }
+  }
+
+  const nim = email.split('@')[0]
+  
+  try {
+    const admin = await prisma.admin.findUnique({ where: { nim } })
+    if (!admin) {
+      return { isAdmin: false, error: 'Not an admin' }
+    }
+    return { isAdmin: true, nim, email }
+  } catch (error) {
+    return { isAdmin: false, error: 'Admin check failed' }
+  }
+}
+
 export async function GET() {
-  const [settings, candidates] = await Promise.all([
-    getElectionSettings(),
-    prisma.candidate.findMany({
-      orderBy: { id: 'asc' },
-      include: { _count: { select: { VoteRecords: true } } },
-    }),
-  ])
+  const auth = await checkAdminAuth()
+  if (!auth.isAdmin) {
+    return new Response('Unauthorized', { status: 401 })
+  }
+
+  const candidates = await prisma.candidate.findMany({
+    orderBy: { id: 'asc' },
+    include: { _count: { select: { VoteRecords: true } } },
+  })
 
   const rows = candidates.map((c) => ({
     id: c.id,
@@ -46,8 +75,6 @@ export async function GET() {
     headers: {
       'Content-Type': 'text/csv; charset=utf-8',
       'Content-Disposition': `attachment; filename="${filename}"`,
-      'X-Election-Open': settings.isOpen ? '1' : '0',
     },
   })
 }
-

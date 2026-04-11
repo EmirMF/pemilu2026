@@ -2,8 +2,10 @@ import { NextResponse } from 'next/server'
 import { getElectionSettings, setElectionOpen, invalidateElectionSettingsCache } from '@/lib/election'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { cookies } from 'next/headers'
+import { verifyCookie } from '@/lib/secureCookie'
 
-const VOTE_BUTTON_STATES = ['default', 'before', 'after', 'hidden'] as const
+const VOTE_BUTTON_STATES = ['default', 'before', 'hidden'] as const
 type VoteButtonState = (typeof VOTE_BUTTON_STATES)[number]
 
 function isVoteButtonState(value: unknown): value is VoteButtonState {
@@ -60,6 +62,30 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json()
 
+    // Check admin auth for settings changes (except voteButtonState which uses password)
+    const hasSettingsChange = 'showTotalVotes' in body || 'bgGradientFrom' in body || 'bgGradientVia' in body || 'bgGradientTo' in body || 'countdownEnd' in body || 'countdownType' in body || 'isOpen' in body;
+    
+    if (hasSettingsChange) {
+      const cookieStore = await cookies();
+      const signedSession = cookieStore.get('voter_session')?.value;
+
+      if (!signedSession) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      const email = verifyCookie(signedSession);
+      if (!email) {
+        return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+      }
+
+      const nim = email.split('@')[0];
+      const admin = await prisma.admin.findUnique({ where: { nim } });
+
+      if (!admin) {
+        return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+      }
+    }
+
     // Handle vote button state update
     if ('voteButtonState' in body) {
       if (!isVoteButtonState(body.voteButtonState)) {
@@ -69,8 +95,8 @@ export async function PUT(request: Request) {
         )
       }
 
-      // Password required for 'default' and 'after' states
-      if (body.voteButtonState === 'default' || body.voteButtonState === 'after') {
+      // Password required for 'default' state
+      if (body.voteButtonState === 'default') {
         if (!body.password) {
           return NextResponse.json(
             { error: 'Password sistem diperlukan.' },
@@ -196,6 +222,26 @@ export async function PUT(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    // Check admin auth
+    const cookieStore = await cookies();
+    const signedSession = cookieStore.get('voter_session')?.value;
+
+    if (!signedSession) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const email = verifyCookie(signedSession);
+    if (!email) {
+      return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
+    }
+
+    const nim = email.split('@')[0];
+    const admin = await prisma.admin.findUnique({ where: { nim } });
+
+    if (!admin) {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
     const body = await request.json()
     
     const updateData: Record<string, unknown> = {}

@@ -35,7 +35,7 @@ export async function rateLimit(
     return { success: true, remaining: config.maxRequests - data.count, resetAt: data.resetAt }
   } catch (error) {
     console.error('Rate limit error:', error)
-    // Fail open - allow request if rate limiting fails
-    return { success: true, remaining: config.maxRequests, resetAt: now + config.interval * 1000 }
+    // Fail closed - block request if rate limiting fails (safer for security)
+    return { success: false, remaining: 0, resetAt: now + config.interval * 1000 }
   }
 }
