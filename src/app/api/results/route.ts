@@ -85,6 +85,8 @@ export async function GET(request: Request) {
           isOpen: settings.isOpen,
           updatedAt: settings.updatedAt?.toISOString(),
           lastVoteAt: lastVote?.createdAt.toISOString() || null,
+          countdownEnd: settings.countdownEnd?.toISOString(),
+          countdownType: settings.countdownType,
         },
         totals: { totalVotes, totalDPT, totalVoted, turnoutPct: totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100 },
         candidates: candidatesData,
@@ -114,6 +116,7 @@ export async function GET(request: Request) {
       election: {
         isOpen: settings.isOpen,
         countdownEnd: settings.countdownEnd?.toISOString(),
+        countdownType: settings.countdownType,
         voteButtonState: settings.voteButtonState || 'default',
       },
       totals: null,
