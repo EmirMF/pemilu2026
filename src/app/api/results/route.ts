@@ -34,7 +34,57 @@ export async function GET(request: Request) {
     const settings = await getElectionSettings()
     const candidateWhere = includeHidden ? {} : { isHidden: false }
 
-    // Admin + realtime = full data
+    // If results are published, use snapshot data instead of real-time
+    if (settings.resultsPublished && !forceRealtime) {
+      const publishedResults = await prisma.publishedResult.findMany({
+        orderBy: { voteCount: 'desc' },
+      })
+      
+      const totalVotes = publishedResults.reduce((acc, p) => acc + p.voteCount, 0)
+      
+      // Get candidate details for published results
+      const candidates = await prisma.candidate.findMany({
+        where: candidateWhere,
+        orderBy: { id: 'asc' },
+      })
+      
+      const candidatesData = candidates.map(c => {
+        const published = publishedResults.find(p => p.candidateId === c.id)
+        return {
+          id: c.id,
+          name: c.name,
+          vision: c.vision,
+          mission: c.mission,
+          major: c.major,
+          photo: c.photo,
+          draftLink: c.draftLink,
+          isHidden: c.isHidden,
+          voteCount: published?.voteCount ?? 0,
+          percentage: totalVotes === 0 ? 0 : ((published?.voteCount ?? 0) / totalVotes) * 100,
+        }
+      })
+
+      // Get DPT stats for totals
+      const totalDPT = await prisma.voter.count({ where: { isInDPT: true } })
+      const totalVoted = await prisma.voter.count({ where: { hasVoted: true, isInDPT: true } })
+
+      return NextResponse.json({
+        election: {
+          isOpen: settings.isOpen,
+          countdownEnd: settings.countdownEnd?.toISOString(),
+          countdownType: settings.countdownType,
+          voteButtonState: settings.voteButtonState || 'default',
+          resultsPublished: settings.resultsPublished,
+          resultsPublishedAt: settings.resultsPublishedAt?.toISOString() || null,
+        },
+        totals: { totalVotes, totalDPT, totalVoted, turnoutPct: totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100 },
+        candidates: candidatesData,
+        isSnapshot: true,
+        snapshotAt: settings.resultsPublishedAt?.toISOString() || null,
+      })
+    }
+
+    // Admin + realtime = full data (bypass snapshot)
     if (isAdmin && forceRealtime) {
       const totalDPT = await prisma.voter.count({ where: { isInDPT: true } })
       const totalVoted = await prisma.voter.count({ where: { hasVoted: true, isInDPT: true } })
@@ -87,6 +137,8 @@ export async function GET(request: Request) {
           lastVoteAt: lastVote?.createdAt.toISOString() || null,
           countdownEnd: settings.countdownEnd?.toISOString(),
           countdownType: settings.countdownType,
+          resultsPublished: settings.resultsPublished,
+          resultsPublishedAt: settings.resultsPublishedAt?.toISOString() || null,
         },
         totals: { totalVotes, totalDPT, totalVoted, turnoutPct: totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100 },
         candidates: candidatesData,
@@ -118,6 +170,8 @@ export async function GET(request: Request) {
         countdownEnd: settings.countdownEnd?.toISOString(),
         countdownType: settings.countdownType,
         voteButtonState: settings.voteButtonState || 'default',
+        resultsPublished: settings.resultsPublished,
+        resultsPublishedAt: settings.resultsPublishedAt?.toISOString() || null,
       },
       totals: null,
       candidates: candidatesData,

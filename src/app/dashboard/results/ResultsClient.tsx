@@ -100,9 +100,10 @@ export default function ResultsClient() {
 
   const exportUrl = useMemo(() => '/api/results/export', [])
 
-  const fetchResults = async (opts?: { includeRecords?: boolean; skip?: number }) => {
+  const fetchResults = async (opts?: { includeRecords?: boolean; skip?: number; forceRealtime?: boolean }) => {
     const includeRecords = opts?.includeRecords ?? false
     const skip = opts?.skip ?? 0
+    const forceRealtime = opts?.forceRealtime ?? false
 
     setLoading(true)
     setError(null)
@@ -114,7 +115,9 @@ export default function ResultsClient() {
         qs.set('skip', String(skip))
       }
       qs.set('includeHidden', '1')
-      qs.set('realtime', '1')
+      if (forceRealtime) {
+        qs.set('realtime', '1')
+      }
       const res = await fetch(`/api/results${qs.toString() ? `?${qs.toString()}` : ''}`, { cache: 'no-store' })
       if (!res.ok) throw new Error('Gagal mengambil data hasil.')
       const json = (await res.json()) as ResultsResponse
