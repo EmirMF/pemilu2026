@@ -26,7 +26,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "Pemilu 8EH Radio ITB 2026",
-    description: "Pemilu 8EH Radio ITB 2026",
+    description: "Pemilihan Umum 8EH Radio ITB 2026",
     url: "https://pemilu.8ehradioitb.com",
     siteName: "8EH Radio ITB",
     images: [
