@@ -59,6 +59,7 @@ model ElectionSettings {
   id                String    @id @default(auto()) @map("_id") @db.ObjectId
   key               String    @unique
   isOpen            Boolean   @default(true)
+  microsoftLoginEnabled Boolean @default(true) // Allow Microsoft SSO login
   countdownEnd      DateTime?
   countdownType     String?   @default("end") // "start" or "end"
   bgGradientFrom    String?   @default("#FFC300") // Gradient start color

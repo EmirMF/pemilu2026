@@ -10,12 +10,12 @@ export async function GET() {
     const signedSession = cookieStore.get('voter_session')?.value;
 
     if (!signedSession) {
-      return NextResponse.json({ authenticated: false }, { status: 200 });
+      return NextResponse.json({ authenticated: false, isAuthenticated: false }, { status: 200 });
     }
 
     const email = verifyCookie(signedSession);
     if (!email) {
-      return NextResponse.json({ authenticated: false }, { status: 200 });
+      return NextResponse.json({ authenticated: false, isAuthenticated: false }, { status: 200 });
     }
 
     const nim = email.split('@')[0];
@@ -39,6 +39,7 @@ export async function GET() {
 
     const response = NextResponse.json({
       authenticated: true,
+      isAuthenticated: true,
       nim,
       email,
       isAdmin
@@ -50,6 +51,6 @@ export async function GET() {
     return response;
   } catch (error) {
     console.error('Session Error:', error);
-    return NextResponse.json({ authenticated: false }, { status: 200 });
+    return NextResponse.json({ authenticated: false, isAuthenticated: false }, { status: 200 });
   }
 }

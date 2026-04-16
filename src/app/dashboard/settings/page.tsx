@@ -9,6 +9,7 @@ import TimelineSettings from './TimelineSettings';
 import PublishPasswordSettings from './PublishPasswordSettings';
 import BadgeVisibilitySettings from './BadgeVisibilitySettings';
 import ResetElectionSettings from './ResetElectionSettings';
+import AuthLoginSettings from './AuthLoginSettings';
 
 interface AccordionItemProps {
   title: string;
@@ -48,7 +49,7 @@ function AccordionItem({ title, description, children, isOpen, onToggle }: Accor
 }
 
 export default function SettingsPage() {
-  const [openSection, setOpenSection] = useState<string | null>('password');
+  const [openSection, setOpenSection] = useState<string | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
@@ -76,6 +77,17 @@ export default function SettingsPage() {
       </div>
 
       <div className="space-y-4">
+        {isSuperAdmin && (
+        <AccordionItem
+          title="Autentikasi Login"
+          description="Aktif/nonaktifkan login Microsoft dan jadikan OTP sebagai login utama"
+          isOpen={openSection === 'auth'}
+          onToggle={() => toggleSection('auth')}
+        >
+          <AuthLoginSettings />
+        </AccordionItem>
+        )}
+
         {/* <AccordionItem
           title="Password Admin"
           description="Ubah password untuk login admin"

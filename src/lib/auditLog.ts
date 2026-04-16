@@ -6,6 +6,7 @@ export type AuditAction =
   | 'VOTE_ATTEMPT_FAILED'
   | 'LOGIN_SSO_SUCCESS'
   | 'LOGIN_SSO_REJECTED'
+  | 'LOGIN_OTP_SUCCESS'
   | 'LOGIN_FAILED'
   | 'ADMIN_LOGIN'
   | 'ADMIN_LOGOUT'

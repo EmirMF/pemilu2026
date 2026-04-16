@@ -31,6 +31,15 @@ export async function GET(request: Request) {
       return NextResponse.redirect(new URL('/login?error=oauth_config', request.url));
     }
 
+    const settings = await prisma.electionSettings.findUnique({
+      where: { key: 'main' },
+      select: { microsoftLoginEnabled: true },
+    });
+
+    if (settings?.microsoftLoginEnabled === false) {
+      return NextResponse.redirect(new URL('/login?error=oauth_disabled', request.url));
+    }
+
     const tokenUrl = `https://login.microsoftonline.com/${TENANT_ID}/oauth2/v2.0/token`;
     const tokenBody = new URLSearchParams({
       client_id: AZURE_CLIENT_ID,

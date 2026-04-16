@@ -70,6 +70,10 @@ async function sendViaBrevo(targetEmail: string, otpCode: string, originalEmail:
  * Send OTP email via Gmail (using nodemailer)
  */
 async function sendViaGmail(targetEmail: string, otpCode: string, originalEmail: string, testMode: boolean) {
+  if (!process.env.GMAIL_EMAIL || !process.env.GMAIL_APP_PASSWORD) {
+    throw new Error('Konfigurasi Gmail belum lengkap');
+  }
+
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -99,6 +103,10 @@ async function sendViaGmail(targetEmail: string, otpCode: string, originalEmail:
   const result = await transporter.sendMail(mailOptions);
   console.log(`Email sent successfully via Gmail to ${targetEmail}:`, result.messageId);
   return result;
+}
+
+export async function sendOtpEmailViaGmail(email: string, otpCode: string) {
+  return sendViaGmail(email, otpCode, email, false);
 }
 
 /**

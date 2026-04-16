@@ -14,6 +14,7 @@ function isVoteButtonState(value: unknown): value is VoteButtonState {
 
 function formatElectionSettings(settings: {
   isOpen: boolean
+  microsoftLoginEnabled?: boolean | null
   countdownEnd: Date | string | null
   countdownType: string | null
   bgGradientFrom: string | null
@@ -27,6 +28,7 @@ function formatElectionSettings(settings: {
 }) {
   return {
     isOpen: settings.isOpen,
+    microsoftLoginEnabled: settings.microsoftLoginEnabled ?? true,
     countdownEnd: settings.countdownEnd
       ? (settings.countdownEnd instanceof Date
           ? settings.countdownEnd.toISOString()
@@ -63,7 +65,7 @@ export async function PUT(request: Request) {
     const body = await request.json()
 
     // Check admin auth for settings changes (except voteButtonState which uses password)
-    const hasSettingsChange = 'showTotalVotes' in body || 'bgGradientFrom' in body || 'bgGradientVia' in body || 'bgGradientTo' in body || 'countdownEnd' in body || 'countdownType' in body || 'isOpen' in body;
+    const hasSettingsChange = 'showTotalVotes' in body || 'bgGradientFrom' in body || 'bgGradientVia' in body || 'bgGradientTo' in body || 'countdownEnd' in body || 'countdownType' in body || 'isOpen' in body || 'microsoftLoginEnabled' in body;
     
     if (hasSettingsChange) {
       const cookieStore = await cookies();
@@ -156,6 +158,23 @@ export async function PUT(request: Request) {
       // Invalidate cache
       await invalidateElectionSettingsCache()
       
+      return NextResponse.json(formatElectionSettings(updated))
+    }
+
+    // Handle Microsoft login toggle
+    if ('microsoftLoginEnabled' in body) {
+      const updated = await prisma.electionSettings.upsert({
+        where: { key: 'main' },
+        update: { microsoftLoginEnabled: Boolean(body.microsoftLoginEnabled) },
+        create: {
+          key: 'main',
+          isOpen: true,
+          microsoftLoginEnabled: Boolean(body.microsoftLoginEnabled),
+        },
+      })
+
+      await invalidateElectionSettingsCache()
+
       return NextResponse.json(formatElectionSettings(updated))
     }
     

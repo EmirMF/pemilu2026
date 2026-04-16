@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
 const AZURE_CLIENT_ID = process.env.AZURE_CLIENT_ID;
 const AZURE_CLIENT_SECRET = process.env.AZURE_CLIENT_SECRET;
@@ -9,6 +10,18 @@ export async function GET(request: Request) {
     return NextResponse.json(
       { error: 'Konfigurasi SSO tidak lengkap. Hubungi administrator.' },
       { status: 500 }
+    );
+  }
+
+  const settings = await prisma.electionSettings.findUnique({
+    where: { key: 'main' },
+    select: { microsoftLoginEnabled: true },
+  });
+
+  if (settings?.microsoftLoginEnabled === false) {
+    return NextResponse.json(
+      { error: 'Login Microsoft sedang dinonaktifkan. Gunakan OTP.' },
+      { status: 403 }
     );
   }
 

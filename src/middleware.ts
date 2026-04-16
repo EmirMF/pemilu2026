@@ -6,13 +6,14 @@ export function middleware(request: NextRequest) {
   const voterSession = request.cookies.get('voter_session');
   
   // Redirect to login if already logged in and trying to access login page
-  if (path === '/login' && voterSession) {
+  if ((path === '/login' || path === '/login-otp') && voterSession) {
     return NextResponse.redirect(new URL('/', request.url));
   }
   
   // Public routes that don't require authentication
   const publicRoutes = [
     '/login',
+    '/login-otp',
     '/api/auth/sso',
     '/api/auth/login-password',
     '/api/auth/set-password',
@@ -54,6 +55,7 @@ export function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/login',
+    '/login-otp',
     '/vote/:path*',
     '/dashboard/:path*',
     '/verify',
