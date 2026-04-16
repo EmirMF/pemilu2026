@@ -37,7 +37,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { name, vision, mission, major, photo, draftLink, isHidden } = body;
+    const { name, tagline, vision, mission, major, photo, draftLink, isHidden } = body;
 
     if (!name || !vision) {
       return NextResponse.json({ error: 'Nama dan Visi wajib diisi.' }, { status: 400 });
@@ -46,6 +46,7 @@ export async function POST(request: Request) {
     const candidate = await prisma.candidate.create({
       data: {
         name,
+        tagline,
         vision,
         mission,
         major,

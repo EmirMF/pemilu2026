@@ -53,6 +53,7 @@ export async function GET(request: Request) {
         return {
           id: c.id,
           name: c.name,
+          tagline: c.tagline,
           vision: c.vision,
           mission: c.mission,
           major: c.major,
@@ -99,6 +100,7 @@ export async function GET(request: Request) {
       const candidatesData = candidates.map(c => ({
         id: c.id,
         name: c.name,
+        tagline: c.tagline,
         vision: c.vision,
         mission: c.mission,
         major: c.major,
@@ -156,6 +158,7 @@ export async function GET(request: Request) {
     const candidatesData = candidates.map(c => ({
       id: c.id,
       name: c.name,
+      tagline: c.tagline,
       vision: c.vision,
       mission: c.mission,
       major: c.major,

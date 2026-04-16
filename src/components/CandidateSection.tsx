@@ -8,6 +8,7 @@ import SpotlightCard from './SpotlightCard';
 type Candidate = {
   id: string
   name: string
+  tagline?: string | null
   vision: string
   mission?: string | null
   major?: string | null
@@ -44,8 +45,13 @@ export default function CandidateSection({ candidates }: { candidates: Candidate
                 spotlightColor="rgba(255, 195, 10, 0.2)"
               >
                 {candidate.photo ? (
-                  <div className="h-64 bg-cream-100 dark:bg-neutral-800 overflow-hidden rounded-t-3xl">
+                  <div className="h-64 bg-cream-100 dark:bg-neutral-800 overflow-hidden rounded-t-3xl relative">
                     <img src={candidate.photo} alt={candidate.name} className="w-full h-full object-cover" draggable="false" onDragStart={(e) => e.preventDefault()} />
+                    {candidate.tagline && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3">
+                        <p className="text-white text-sm font-semibold text-center">{candidate.tagline}</p>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <div className="h-64 bg-cream-100 dark:bg-neutral-800 flex items-center justify-center overflow-hidden rounded-t-3xl">

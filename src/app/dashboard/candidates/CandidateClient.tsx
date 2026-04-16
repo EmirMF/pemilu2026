@@ -7,6 +7,7 @@ import { Plus, Edit2, Trash2, Link as LinkIcon, Image as ImageIcon, Upload } fro
 type Candidate = {
   id: string;
   name: string;
+  tagline: string | null;
   vision: string;
   mission: string | null;
   major: string | null;
@@ -26,6 +27,7 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
 
   const [formData, setFormData] = useState({
     name: '',
+    tagline: '',
     vision: '',
     mission: '',
     major: '',
@@ -39,6 +41,7 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
       setEditingCandidate(candidate);
       setFormData({
         name: candidate.name,
+        tagline: candidate.tagline || '',
         vision: candidate.vision,
         mission: candidate.mission || '',
         major: candidate.major || '',
@@ -48,7 +51,7 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
       });
     } else {
       setEditingCandidate(null);
-      setFormData({ name: '', vision: '', mission: '', major: '', photo: '', draftLink: '', isHidden: false });
+      setFormData({ name: '', tagline: '', vision: '', mission: '', major: '', photo: '', draftLink: '', isHidden: false });
     }
     setIsModalOpen(true);
   };
@@ -280,6 +283,17 @@ export default function CandidateClient({ initialCandidates }: { initialCandidat
                   className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
                   placeholder="Contoh: Budi Santoso"
                 />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-1">Tagline (Opsional)</label>
+                <input
+                  type="text"
+                  value={formData.tagline} onChange={e => setFormData({ ...formData, tagline: e.target.value })}
+                  className="w-full px-4 py-2 bg-neutral-50 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition-all"
+                  placeholder="Contoh: Inovasi untuk Perubahan"
+                />
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1">Tagline ini akan ditampilkan di bawah foto kandidat</p>
               </div>
 
               <div>

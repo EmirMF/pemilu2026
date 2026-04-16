@@ -11,6 +11,7 @@ type Candidate = {
   id: string;
   photo: string;
   name: string;
+  tagline?: string | null;
   vision: string;
   mission?: string | null;
   major?: string | null;
@@ -125,6 +126,11 @@ export default function VoteClient({ candidates }: { candidates: Candidate[] }) 
             {c.photo ? (
               <div className="relative">
                 <img src={c.photo} alt={c.name} className="w-full rounded-2xl mb-4 object-cover aspect-square" draggable="false" onDragStart={(e) => e.preventDefault()} />
+                {c.tagline && (
+                  <div className="absolute top-0 left-0 right-0 bg-gradient-to-b from-black/70 to-transparent p-2 rounded-t-2xl">
+                    <p className="text-white text-sm font-semibold text-center">{c.tagline}</p>
+                  </div>
+                )}
                 <span className="absolute bottom-3 left-3 w-8 h-8 rounded-full bg-gradient-to-r from-red-600 to-orange-500 text-white flex items-center justify-center text-sm font-bold">
                   {i + 1}
                 </span>

@@ -34,6 +34,7 @@ model Admin {
 model Candidate {
   id          String       @id @default(auto()) @map("_id") @db.ObjectId
   name        String
+  tagline     String?      // Short tagline displayed on photo
   vision      String
   mission     String?
   major      String?

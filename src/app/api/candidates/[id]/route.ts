@@ -31,12 +31,13 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     const { id } = await params;
     const body = await request.json();
-    const { name, vision, mission, major, photo, draftLink, isHidden } = body;
+    const { name, tagline, vision, mission, major, photo, draftLink, isHidden } = body;
 
     const candidate = await prisma.candidate.update({
       where: { id: id },
       data: {
         name,
+        tagline,
         vision,
         mission,
         major,

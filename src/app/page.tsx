@@ -12,6 +12,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 type ResultCandidate = {
   id: string
   name: string
+  tagline?: string | null
   vision: string
   mission: string | null
   major?: string | null
@@ -57,6 +58,7 @@ export default function LandingPage() {
           (json.candidates ?? []).map((c) => ({
             id: c.id,
             name: c.name,
+            tagline: c.tagline,
             vision: c.vision,
             mission: c.mission,
             major: c.major,
