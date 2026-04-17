@@ -3,12 +3,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { Users, Menu, X, User, LogOut, LayoutDashboard, CheckCircle, LogIn } from 'lucide-react'
 import Image from 'next/image'
-import DPTModal from './DPTModal'
 import ThemeToggle from './ThemeToggle'
 import { useToast } from './Toast'
 
 export default function Navbar() {
-  const [isDPTModalOpen, setIsDPTModalOpen] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [userNim, setUserNim] = useState<string | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
@@ -68,10 +66,10 @@ export default function Navbar() {
     }
   }
 
-  const navItems: Array<{ label: string; href?: string; onClick: () => void; disabled?: boolean }> = [
-    { label: 'Beranda', href: '/', onClick: () => {} },
-    { label: 'DPT', onClick: () => setIsDPTModalOpen(true) },
-    { label: 'Peraturan', href: '/peraturan', onClick: () => {} },
+  const navItems: Array<{ label: string; href?: string; disabled?: boolean }> = [
+    { label: 'Beranda', href: '/' },
+    { label: 'DPT', href: '/dpt' },
+    { label: 'Peraturan', href: '/peraturan' },
   ]
 
   const authNavItems: Array<{ label: string; href: string }> = userNim 
@@ -107,23 +105,17 @@ export default function Navbar() {
                   >
                     {item.label}
                   </span>
-                ) : item.href && item.label !== 'DPT' ? (
+                ) : item.href ? (
                   <a
                     key={item.label}
                     href={item.href}
                     className="text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 text-sm font-medium transition-colors"
                   >
+                    {item.label === 'DPT' && <Users size={16} className="inline mr-1" />}
                     {item.label}
                   </a>
                 ) : (
-                  <button
-                    key={item.label}
-                    onClick={item.onClick}
-                    className="text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 text-sm font-medium transition-colors"
-                  >
-                    {item.label === 'DPT' && <Users size={16} className="inline mr-1" />}
-                    {item.label}
-                  </button>
+                  null
                 )
               ))}
               
@@ -210,27 +202,18 @@ export default function Navbar() {
                   >
                     {item.label}
                   </div>
-                ) : item.href && item.label !== 'DPT' ? (
+                ) : item.href ? (
                   <a
                     key={item.label}
                     href={item.href}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
                   >
+                    {item.label === 'DPT' && <Users size={16} className="inline mr-2" />}
                     {item.label}
                   </a>
                 ) : (
-                  <button
-                    key={item.label}
-                    onClick={() => {
-                      item.onClick?.()
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    {item.label === 'DPT' && <Users size={16} className="inline mr-2" />}
-                    {item.label}
-                  </button>
+                  null
                 )
               ))}
               
@@ -299,7 +282,6 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <DPTModal isOpen={isDPTModalOpen} onClose={() => setIsDPTModalOpen(false)} />
     </>
   )
 }
