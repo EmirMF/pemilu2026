@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { checkAdminAuth } from '@/lib/adminAuth';
+import { isSuperAdminNim } from '@/lib/superAdmin';
 
 // GET - Fetch all users (voters + admin status)
 export async function GET() {
@@ -53,6 +54,10 @@ export async function POST(request: Request) {
     const auth = await checkAdminAuth();
     if (!auth.isAdmin) {
       return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!isSuperAdminNim(auth.nim)) {
+      return NextResponse.json({ error: 'Hanya super admin yang dapat menambahkan user' }, { status: 403 });
     }
 
     const { nim } = await request.json();

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { cookies } from 'next/headers';
 import { verifyCookie } from '@/lib/secureCookie';
+import { isSuperAdminNim } from '@/lib/superAdmin';
 
 export async function POST(request: Request) {
   try {
@@ -23,6 +24,10 @@ export async function POST(request: Request) {
 
     if (!admin) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 });
+    }
+
+    if (!isSuperAdminNim(adminNim)) {
+      return NextResponse.json({ error: 'Hanya super admin yang dapat mengubah status DPT' }, { status: 403 });
     }
 
     const { nim, isInDPT } = await request.json();

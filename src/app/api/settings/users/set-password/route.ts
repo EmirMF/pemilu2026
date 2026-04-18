@@ -3,12 +3,17 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { createAuditLog } from '@/lib/auditLog';
 import { checkAdminAuth } from '@/lib/adminAuth';
+import { isSuperAdminNim } from '@/lib/superAdmin';
 
 export async function POST(request: Request) {
   try {
     const auth = await checkAdminAuth();
     if (!auth.isAdmin) {
       return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!isSuperAdminNim(auth.nim)) {
+      return NextResponse.json({ error: 'Hanya super admin yang dapat mengatur password user' }, { status: 403 });
     }
 
     const { nim, password } = await request.json();

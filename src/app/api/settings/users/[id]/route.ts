@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { checkAdminAuth } from '@/lib/adminAuth';
 import { createAuditLog } from '@/lib/auditLog';
+import { isSuperAdminNim } from '@/lib/superAdmin';
 
 // PATCH - Update user name
 export async function PATCH(
@@ -12,6 +13,10 @@ export async function PATCH(
     const auth = await checkAdminAuth();
     if (!auth.isAdmin) {
       return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!isSuperAdminNim(auth.nim)) {
+      return NextResponse.json({ error: 'Hanya super admin yang dapat mengubah nama user' }, { status: 403 });
     }
 
     const { id } = await params;
@@ -75,6 +80,10 @@ export async function DELETE(
     const auth = await checkAdminAuth();
     if (!auth.isAdmin) {
       return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!isSuperAdminNim(auth.nim)) {
+      return NextResponse.json({ error: 'Hanya super admin yang dapat menghapus user' }, { status: 403 });
     }
 
     const { id } = await params;

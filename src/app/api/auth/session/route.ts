@@ -3,6 +3,7 @@ import { cookies } from 'next/headers';
 import { verifyCookie } from '@/lib/secureCookie';
 import prisma from '@/lib/prisma';
 import { getCacheOrSet } from '@/lib/cache';
+import { isSuperAdminNim } from '@/lib/superAdmin';
 
 export async function GET() {
   try {
@@ -42,7 +43,8 @@ export async function GET() {
       isAuthenticated: true,
       nim,
       email,
-      isAdmin
+      isAdmin,
+      isSuperAdmin: isAdmin && isSuperAdminNim(nim)
     });
     
     response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate');

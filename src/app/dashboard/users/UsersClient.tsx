@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Plus, Trash2, Shield, ShieldOff, Search, ArrowUpDown, Download, Upload, Edit2, Check, X, CheckCircle, XCircle, Key, KeyRound } from "lucide-react";
+import { isSuperAdminNim } from "@/lib/superAdmin";
 
 interface User {
   id: string;
@@ -35,6 +36,7 @@ export default function UsersClient() {
   const [setPasswordModal, setSetPasswordModal] = useState<{ open: boolean; nim: string; name: string | null }>({ open: false, nim: '', name: null });
   const [setPasswordLoading, setSetPasswordLoading] = useState(false);
   const [setPasswordForm, setSetPasswordForm] = useState({ password: '', confirmPassword: '' });
+  const isSuperAdmin = isSuperAdminNim(currentUserNim);
 
   const fetchUsers = async () => {
     try {
@@ -70,6 +72,10 @@ export default function UsersClient() {
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newNim.trim()) return;
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat menambah user');
+      return;
+    }
 
     setLoading(true);
     setError("");
@@ -96,6 +102,10 @@ export default function UsersClient() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat menghapus user');
+      return;
+    }
     if (!confirm("Yakin ingin menghapus user ini?")) return;
 
     try {
@@ -112,6 +122,10 @@ export default function UsersClient() {
   };
 
   const handleToggleAdmin = async (nim: string, currentIsAdmin: boolean) => {
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat mengubah status admin');
+      return;
+    }
     try {
       const res = await fetch("/api/settings/users/admin", {
         method: "POST",
@@ -132,6 +146,10 @@ export default function UsersClient() {
   };
 
   const handleToggleDPT = async (nim: string, currentIsInDPT: boolean) => {
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat mengubah status DPT');
+      return;
+    }
     try {
       const res = await fetch("/api/settings/users/dpt", {
         method: "POST",
@@ -152,6 +170,10 @@ export default function UsersClient() {
   };
 
   const handleSetPassword = async () => {
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat mengatur password user');
+      return;
+    }
     if (!setPasswordForm.password) {
       alert("Password harus diisi");
       return;
@@ -222,6 +244,10 @@ export default function UsersClient() {
   const handleImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat mengimpor data users');
+      return;
+    }
 
     setImporting(true);
     try {
@@ -255,11 +281,18 @@ export default function UsersClient() {
   };
 
   const handleEditName = (userId: string, currentName: string | null) => {
+    if (!isSuperAdmin) {
+      return;
+    }
     setEditingUserId(userId);
     setEditingName(currentName || "");
   };
 
   const handleSaveName = async (userId: string) => {
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat mengubah nama user');
+      return;
+    }
     try {
       const res = await fetch(`/api/settings/users/${userId}`, {
         method: 'PATCH',
@@ -311,6 +344,10 @@ export default function UsersClient() {
 
   const handleBulkDelete = async () => {
     if (selectedUsers.size === 0) return;
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat menghapus user');
+      return;
+    }
     if (!confirm(`Yakin ingin menghapus ${selectedUsers.size} user yang dipilih?`)) return;
 
     setBulkActionLoading(true);
@@ -331,6 +368,10 @@ export default function UsersClient() {
 
   const handleBulkToggleAdmin = async (makeAdmin: boolean) => {
     if (selectedUsers.size === 0) return;
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat mengubah status admin');
+      return;
+    }
     if (!confirm(`Yakin ingin ${makeAdmin ? 'jadikan admin' : 'hapus admin'} ${selectedUsers.size} user yang dipilih?`)) return;
 
     setBulkActionLoading(true);
@@ -356,6 +397,10 @@ export default function UsersClient() {
 
   const handleBulkToggleDPT = async (addToDPT: boolean) => {
     if (selectedUsers.size === 0) return;
+    if (!isSuperAdmin) {
+      alert('Hanya super admin yang dapat mengubah status DPT');
+      return;
+    }
     if (!confirm(`Yakin ingin ${addToDPT ? 'tambahkan ke' : 'hapus dari'} DPT ${selectedUsers.size} user yang dipilih?`)) return;
 
     setBulkActionLoading(true);
@@ -427,6 +472,11 @@ export default function UsersClient() {
           <p className="text-sm lg:text-base text-neutral-500 dark:text-neutral-400 mt-1">
             Kelola whitelist NIM dan assign admin untuk sistem pemilihan.
           </p>
+          {!isSuperAdmin && (
+            <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+              View-only
+            </p>
+          )}
         </div>
         <div className="flex gap-2">
           <button
@@ -436,50 +486,56 @@ export default function UsersClient() {
             <Download size={18} />
             Export CSV
           </button>
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={importing}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2 transition-colors text-sm lg:text-base"
-          >
-            <Upload size={18} />
-            {importing ? 'Importing...' : 'Import CSV'}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv"
-            onChange={handleImport}
-            className="hidden"
-          />
+          {isSuperAdmin && (
+            <>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={importing}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 flex items-center gap-2 transition-colors text-sm lg:text-base"
+              >
+                <Upload size={18} />
+                {importing ? 'Importing...' : 'Import CSV'}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleImport}
+                className="hidden"
+              />
+            </>
+          )}
         </div>
       </div>
 
       {/* Add User Form */}
-      <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 lg:p-6 shadow-sm border border-neutral-100 dark:border-neutral-700">
-        <h3 className="text-lg lg:text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">Tambah User Baru</h3>
-        <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3">
-          <input
-            type="text"
-            value={newNim}
-            onChange={(e) => setNewNim(e.target.value)}
-            placeholder="Masukkan NIM (contoh: 13521001)"
-            className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 text-sm lg:text-base"
-            disabled={loading}
-          />
-          <button
-            type="submit"
-            disabled={loading || !newNim.trim()}
-            className="px-6 py-2 bg-secondary-500 text-white rounded-lg hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors text-sm lg:text-base whitespace-nowrap"
-          >
-            <Plus size={18} />
-            {loading ? "Menambahkan..." : "Tambah"}
-          </button>
-        </form>
-        {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
-        <p className="text-neutral-500 dark:text-neutral-400 text-xs lg:text-sm mt-3">
-          User yang ditambahkan akan masuk ke whitelist dan bisa login untuk voting.
-        </p>
-      </div>
+      {isSuperAdmin && (
+        <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 lg:p-6 shadow-sm border border-neutral-100 dark:border-neutral-700">
+          <h3 className="text-lg lg:text-xl font-semibold text-neutral-800 dark:text-neutral-100 mb-4">Tambah User Baru</h3>
+          <form onSubmit={handleAdd} className="flex flex-col sm:flex-row gap-3">
+            <input
+              type="text"
+              value={newNim}
+              onChange={(e) => setNewNim(e.target.value)}
+              placeholder="Masukkan NIM (contoh: 13521001)"
+              className="flex-1 px-4 py-2 border border-neutral-300 dark:border-neutral-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 text-sm lg:text-base"
+              disabled={loading}
+            />
+            <button
+              type="submit"
+              disabled={loading || !newNim.trim()}
+              className="px-6 py-2 bg-secondary-500 text-white rounded-lg hover:bg-secondary-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors text-sm lg:text-base whitespace-nowrap"
+            >
+              <Plus size={18} />
+              {loading ? "Menambahkan..." : "Tambah"}
+            </button>
+          </form>
+          {error && <p className="text-red-600 text-sm mt-2">{error}</p>}
+          <p className="text-neutral-500 dark:text-neutral-400 text-xs lg:text-sm mt-3">
+            User yang ditambahkan akan masuk ke whitelist dan bisa login untuk voting.
+          </p>
+        </div>
+      )}
 
       {/* Users List */}
       <div className="bg-white dark:bg-neutral-900 rounded-2xl p-4 lg:p-6 shadow-sm border border-neutral-100 dark:border-neutral-700">
@@ -505,7 +561,7 @@ export default function UsersClient() {
         </div>
 
         {/* Bulk Actions */}
-        {selectedUsers.size > 0 && (
+        {isSuperAdmin && selectedUsers.size > 0 && (
           <div className="mb-4 p-3 bg-secondary-50 dark:bg-secondary-900/20 border border-secondary-200 dark:border-secondary-800 rounded-lg flex flex-wrap items-center gap-2">
             <span className="text-sm font-medium text-neutral-700 dark:text-neutral-300">
               Aksi untuk {selectedUsers.size} user:
@@ -566,20 +622,22 @@ export default function UsersClient() {
           </p>
         ) : (
           <div className="overflow-x-auto -mx-4 lg:mx-0">
-            <table className="w-full min-w-[640px]">
+            <table className="w-full min-w-160">
               <thead>
                 <tr className="border-b border-neutral-200 dark:border-neutral-700">
-                  <th className="text-center py-3 px-2 w-10">
-                    <input
-                      type="checkbox"
-                      checked={
-                        filteredAndSortedUsers.filter(u => u.nim !== currentUserNim).length > 0 &&
-                        selectedUsers.size === filteredAndSortedUsers.filter(u => u.nim !== currentUserNim).length
-                      }
-                      onChange={toggleSelectAll}
-                      className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-secondary-600 focus:ring-secondary-500"
-                    />
-                  </th>
+                  {isSuperAdmin && (
+                    <th className="text-center py-3 px-2 w-10">
+                      <input
+                        type="checkbox"
+                        checked={
+                          filteredAndSortedUsers.filter(u => u.nim !== currentUserNim).length > 0 &&
+                          selectedUsers.size === filteredAndSortedUsers.filter(u => u.nim !== currentUserNim).length
+                        }
+                        onChange={toggleSelectAll}
+                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-secondary-600 focus:ring-secondary-500"
+                      />
+                    </th>
+                  )}
                   <th className="text-left py-3 px-4 text-xs lg:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                     <button
                       onClick={() => handleSort('nim')}
@@ -609,7 +667,7 @@ export default function UsersClient() {
                     </button>
                   </th>
                   <th className="text-center py-3 px-4 text-xs lg:text-sm font-semibold text-neutral-700 dark:text-neutral-300">DPT</th>
-                  <th className="text-center py-3 px-4 text-xs lg:text-sm font-semibold text-neutral-700 dark:text-neutral-300">Password</th>
+                  {isSuperAdmin && <th className="text-center py-3 px-4 text-xs lg:text-sm font-semibold text-neutral-700 dark:text-neutral-300">Password</th>}
                   <th className="text-left py-3 px-4 text-xs lg:text-sm font-semibold text-neutral-700 dark:text-neutral-300">
                     <button
                       onClick={() => handleSort('createdAt')}
@@ -619,30 +677,32 @@ export default function UsersClient() {
                       <ArrowUpDown size={12} className={sortField === 'createdAt' ? 'text-secondary-600' : ''} />
                     </button>
                   </th>
-                  <th className="text-right py-3 px-4 text-xs lg:text-sm font-semibold text-neutral-700 dark:text-neutral-300">Aksi</th>
+                  {isSuperAdmin && <th className="text-right py-3 px-4 text-xs lg:text-sm font-semibold text-neutral-700 dark:text-neutral-300">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
                 {filteredAndSortedUsers.map((user) => (
                   <tr key={user.id} className="border-b border-neutral-100 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800">
-                    <td className="py-3 px-2 text-center">
-                      <input
-                        type="checkbox"
-                        checked={selectedUsers.has(user.id)}
-                        onChange={() => toggleSelectUser(user.id)}
-                        disabled={user.nim === currentUserNim}
-                        className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-secondary-600 focus:ring-secondary-500 disabled:opacity-30"
-                      />
-                    </td>
+                    {isSuperAdmin && (
+                      <td className="py-3 px-2 text-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedUsers.has(user.id)}
+                          onChange={() => toggleSelectUser(user.id)}
+                          disabled={user.nim === currentUserNim}
+                          className="w-4 h-4 rounded border-neutral-300 dark:border-neutral-600 text-secondary-600 focus:ring-secondary-500 disabled:opacity-30"
+                        />
+                      </td>
+                    )}
                     <td className="py-3 px-4 text-xs lg:text-sm text-neutral-900 dark:text-neutral-100 font-medium">{user.nim}</td>
                     <td className="py-3 px-4 text-xs lg:text-sm text-neutral-600 dark:text-neutral-400">
-                      {editingUserId === user.id ? (
+                      {isSuperAdmin && editingUserId === user.id ? (
                         <div className="flex items-center gap-1">
                           <input
                             type="text"
                             value={editingName}
                             onChange={(e) => setEditingName(e.target.value)}
-                            className="px-2 py-1 border border-neutral-300 dark:border-neutral-700 rounded text-xs lg:text-sm focus:outline-none focus:ring-1 focus:ring-secondary-500 w-full max-w-[150px]"
+                            className="px-2 py-1 border border-neutral-300 dark:border-neutral-700 rounded text-xs lg:text-sm focus:outline-none focus:ring-1 focus:ring-secondary-500 w-full max-w-37.5"
                             autoFocus
                             onKeyDown={(e) => {
                               if (e.key === 'Enter') handleSaveName(user.id);
@@ -667,17 +727,19 @@ export default function UsersClient() {
                       ) : (
                         <div className="flex items-center gap-2 group">
                           <span>{user.name || '-'}</span>
-                          <button
-                            onClick={() => handleEditName(user.id, user.name)}
-                            className="opacity-0 group-hover:opacity-100 p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-opacity"
-                            title="Edit nama"
-                          >
-                            <Edit2 size={12} />
-                          </button>
+                          {isSuperAdmin && (
+                            <button
+                              onClick={() => handleEditName(user.id, user.name)}
+                              className="opacity-0 group-hover:opacity-100 p-1 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 transition-opacity"
+                              title="Edit nama"
+                            >
+                              <Edit2 size={12} />
+                            </button>
+                          )}
                         </div>
                       )}
                     </td>
-                    <td className="py-3 px-4 text-xs lg:text-sm text-neutral-600 dark:text-neutral-400 truncate max-w-[150px]">{user.email}</td>
+                    <td className="py-3 px-4 text-xs lg:text-sm text-neutral-600 dark:text-neutral-400 truncate max-w-37.5">{user.email}</td>
                     <td className="py-3 px-4">
                       {user.isAdmin ? (
                         <span className="inline-flex items-center gap-1 px-2 lg:px-3 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 rounded-full text-xs font-medium">
@@ -691,80 +753,104 @@ export default function UsersClient() {
                       )}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <button
-                        onClick={() => handleToggleDPT(user.nim, user.isInDPT)}
-                        className={`inline-flex items-center gap-1 px-2 lg:px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                      {isSuperAdmin ? (
+                        <button
+                          onClick={() => handleToggleDPT(user.nim, user.isInDPT)}
+                          className={`inline-flex items-center gap-1 px-2 lg:px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                            user.isInDPT
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
+                              : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
+                          }`}
+                          title={user.isInDPT ? 'Klik untuk hapus dari DPT' : 'Klik untuk tambah ke DPT'}
+                        >
+                          {user.isInDPT ? (
+                            <>
+                              <CheckCircle size={12} />
+                              <span className="hidden sm:inline">Ya</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle size={12} />
+                              <span className="hidden sm:inline">Tidak</span>
+                            </>
+                          )}
+                        </button>
+                      ) : (
+                        <span className={`inline-flex items-center gap-1 px-2 lg:px-3 py-1 rounded-full text-xs font-medium ${
                           user.isInDPT
-                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 hover:bg-green-200 dark:hover:bg-green-900/50'
-                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700'
-                        }`}
-                        title={user.isInDPT ? 'Klik untuk hapus dari DPT' : 'Klik untuk tambah ke DPT'}
-                      >
-                        {user.isInDPT ? (
-                          <>
-                            <CheckCircle size={12} />
-                            <span className="hidden sm:inline">Ya</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle size={12} />
-                            <span className="hidden sm:inline">Tidak</span>
-                          </>
-                        )}
-                      </button>
+                            ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                            : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+                        }`}>
+                          {user.isInDPT ? (
+                            <>
+                              <CheckCircle size={12} />
+                              <span className="hidden sm:inline">Ya</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle size={12} />
+                              <span className="hidden sm:inline">Tidak</span>
+                            </>
+                          )}
+                        </span>
+                      )}
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        {user.hasPassword ? (
-                          <button
-                            onClick={() => setSetPasswordModal({ open: true, nim: user.nim, name: user.name })}
-                            className="inline-flex items-center gap-1 px-2 lg:px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
-                          >
-                            <Key size={12} />
-                            <span className="hidden sm:inline">Set</span>
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => setSetPasswordModal({ open: true, nim: user.nim, name: user.name })}
-                            className="inline-flex items-center gap-1 px-2 lg:px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors"
-                          >
-                            <KeyRound size={12} />
-                            <span className="hidden sm:inline">Set</span>
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                    {isSuperAdmin && (
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {user.hasPassword ? (
+                            <button
+                              onClick={() => setSetPasswordModal({ open: true, nim: user.nim, name: user.name })}
+                              className="inline-flex items-center gap-1 px-2 lg:px-3 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded-full text-xs font-medium hover:bg-green-200 dark:hover:bg-green-900/50 transition-colors"
+                            >
+                              <Key size={12} />
+                              <span className="hidden sm:inline">Set</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setSetPasswordModal({ open: true, nim: user.nim, name: user.name })}
+                              className="inline-flex items-center gap-1 px-2 lg:px-3 py-1 bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400 rounded-full text-xs font-medium hover:bg-yellow-200 dark:hover:bg-yellow-900/50 transition-colors"
+                            >
+                              <KeyRound size={12} />
+                              <span className="hidden sm:inline">Set</span>
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                     <td className="py-3 px-4 text-xs lg:text-sm text-neutral-600 dark:text-neutral-400">
                       {new Date(user.createdAt).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: '2-digit' })}
                     </td>
-                    <td className="py-3 px-4">
-                      {user.nim === currentUserNim ? (
-                        <div className="flex items-center justify-end">
-                          <span className="text-xs text-neutral-500 dark:text-neutral-400 italic"></span>
-                        </div>
-                      ) : (
-                        <div className="flex items-center justify-end gap-1 lg:gap-2">
-                          <button
-                            onClick={() => handleToggleAdmin(user.nim, user.isAdmin)}
-                            className={`p-1.5 lg:p-2 rounded-lg transition-colors ${
-                              user.isAdmin
-                                ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
-                                : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
-                            }`}
-                            title={user.isAdmin ? 'Hapus Admin' : 'Jadikan Admin'}
-                          >
-                            {user.isAdmin ? <ShieldOff size={16} /> : <Shield size={16} />}
-                          </button>
-                          <button
-                            onClick={() => handleDelete(user.id)}
-                            className="p-1.5 lg:p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
-                            title="Hapus User"
-                          >
-                            <Trash2 size={16} />
-                          </button>
-                        </div>
-                      )}
-                    </td>
+                    {isSuperAdmin && (
+                      <td className="py-3 px-4">
+                        {user.nim === currentUserNim ? (
+                          <div className="flex items-center justify-end">
+                            <span className="text-xs text-neutral-500 dark:text-neutral-400 italic"></span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-1 lg:gap-2">
+                            <button
+                              onClick={() => handleToggleAdmin(user.nim, user.isAdmin)}
+                              className={`p-1.5 lg:p-2 rounded-lg transition-colors ${
+                                user.isAdmin
+                                  ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30'
+                                  : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
+                              }`}
+                              title={user.isAdmin ? 'Hapus Admin' : 'Jadikan Admin'}
+                            >
+                              {user.isAdmin ? <ShieldOff size={16} /> : <Shield size={16} />}
+                            </button>
+                            <button
+                              onClick={() => handleDelete(user.id)}
+                              className="p-1.5 lg:p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                              title="Hapus User"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -773,7 +859,7 @@ export default function UsersClient() {
         )}
       </div>
 
-      {setPasswordModal.open && (
+      {isSuperAdmin && setPasswordModal.open && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-xl p-6 w-full max-w-md">
             <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mb-4">

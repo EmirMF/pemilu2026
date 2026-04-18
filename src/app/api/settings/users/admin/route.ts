@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { checkAdminAuth } from '@/lib/adminAuth';
 import { createAuditLog } from '@/lib/auditLog';
+import { isSuperAdminNim } from '@/lib/superAdmin';
 
 // POST - Toggle admin status for a user
 export async function POST(request: Request) {
@@ -9,6 +10,10 @@ export async function POST(request: Request) {
     const auth = await checkAdminAuth();
     if (!auth.isAdmin) {
       return NextResponse.json({ error: auth.error || 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!isSuperAdminNim(auth.nim)) {
+      return NextResponse.json({ error: 'Hanya super admin yang dapat mengubah status admin' }, { status: 403 });
     }
 
     const { nim, isAdmin } = await request.json();
