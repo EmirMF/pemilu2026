@@ -17,6 +17,7 @@ export async function GET(request: Request) {
       select: {
         id: true,
         nim: true,
+        name: true,
         email: true,
         hasVoted: true,
         votedAt: true,

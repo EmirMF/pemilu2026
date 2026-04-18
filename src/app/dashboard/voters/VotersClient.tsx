@@ -6,6 +6,7 @@ import { Search, ArrowUpDown } from "lucide-react";
 interface Voter {
   id: string;
   nim: string;
+  name: string | null;
   email: string;
   hasVoted: boolean;
   votedAt: string | null;
@@ -52,6 +53,7 @@ export default function VotersClient() {
   const filteredAndSortedVoters = useMemo(() => {
     let filtered = voters.filter(voter => 
       voter.nim.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (voter.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       voter.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
@@ -121,7 +123,7 @@ export default function VotersClient() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari NIM atau Email..."
+                placeholder="Cari NIM, Nama, atau Email..."
                 className="pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 w-full sm:w-64 text-sm lg:text-base"
               />
             </div>
@@ -129,7 +131,7 @@ export default function VotersClient() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-[640px]">
+          <table className="w-full text-left min-w-200">
             <thead className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-700">
               <tr>
                 <th className="px-4 lg:px-6 py-3 lg:py-4 font-semibold text-neutral-600 dark:text-neutral-400 text-xs lg:text-sm">
@@ -140,6 +142,9 @@ export default function VotersClient() {
                     NIM
                     <ArrowUpDown size={12} className={sortField === 'nim' ? 'text-secondary-600' : ''} />
                   </button>
+                </th>
+                <th className="px-4 lg:px-6 py-3 lg:py-4 font-semibold text-neutral-600 dark:text-neutral-400 text-xs lg:text-sm">
+                  Nama
                 </th>
                 <th className="px-4 lg:px-6 py-3 lg:py-4 font-semibold text-neutral-600 dark:text-neutral-400 text-xs lg:text-sm">
                   <button
@@ -174,7 +179,8 @@ export default function VotersClient() {
               {filteredAndSortedVoters.map((voter) => (
                 <tr key={voter.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                   <td className="px-4 lg:px-6 py-3 lg:py-4 text-neutral-900 dark:text-neutral-100 font-medium text-xs lg:text-sm">{voter.nim}</td>
-                  <td className="px-4 lg:px-6 py-3 lg:py-4 text-neutral-500 dark:text-neutral-400 text-xs lg:text-sm truncate max-w-[150px] lg:max-w-none">{voter.email}</td>
+                  <td className="px-4 lg:px-6 py-3 lg:py-4 text-neutral-900 dark:text-neutral-100 text-xs lg:text-sm">{voter.name || '-'}</td>
+                  <td className="px-4 lg:px-6 py-3 lg:py-4 text-neutral-500 dark:text-neutral-400 text-xs lg:text-sm truncate max-w-37.5 lg:max-w-none">{voter.email}</td>
                   <td className="px-4 lg:px-6 py-3 lg:py-4">
                     {voter.hasVoted ? (
                       <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-2 lg:px-3 py-1 text-xs rounded-full font-medium whitespace-nowrap">
@@ -216,7 +222,7 @@ export default function VotersClient() {
               ))}
               {filteredAndSortedVoters.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 lg:px-6 py-6 lg:py-8 text-center text-neutral-500 dark:text-neutral-400 text-sm lg:text-base">
+                  <td colSpan={5} className="px-4 lg:px-6 py-6 lg:py-8 text-center text-neutral-500 dark:text-neutral-400 text-sm lg:text-base">
                     {searchQuery ? "Tidak ada pemilih yang sesuai dengan pencarian" : "Tidak ada data pemilih."}
                   </td>
                 </tr>
