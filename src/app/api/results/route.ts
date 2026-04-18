@@ -21,6 +21,15 @@ async function checkAdmin(): Promise<boolean> {
   return !!admin
 }
 
+function buildPublicElection(settings: Awaited<ReturnType<typeof getElectionSettings>>) {
+  return {
+    isOpen: settings.isOpen,
+    countdownEnd: settings.countdownEnd?.toISOString(),
+    countdownType: settings.countdownType,
+    voteButtonState: settings.voteButtonState || 'default',
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const url = new URL(request.url)
@@ -40,8 +49,6 @@ export async function GET(request: Request) {
         orderBy: { voteCount: 'desc' },
       })
       
-      const totalVotes = publishedResults.reduce((acc, p) => acc + p.voteCount, 0)
-      
       // Get candidate details for published results
       const candidates = await prisma.candidate.findMany({
         where: candidateWhere,
@@ -49,7 +56,6 @@ export async function GET(request: Request) {
       })
       
       const candidatesData = candidates.map(c => {
-        const published = publishedResults.find(p => p.candidateId === c.id)
         return {
           id: c.id,
           name: c.name,
@@ -60,28 +66,50 @@ export async function GET(request: Request) {
           photo: c.photo,
           draftLink: c.draftLink,
           isHidden: c.isHidden,
-          voteCount: published?.voteCount ?? 0,
-          percentage: totalVotes === 0 ? 0 : ((published?.voteCount ?? 0) / totalVotes) * 100,
         }
       })
 
-      // Get DPT stats for totals
-      const totalDPT = await prisma.voter.count({ where: { isInDPT: true } })
-      const totalVoted = await prisma.voter.count({ where: { hasVoted: true, isInDPT: true } })
+      if (isAdmin) {
+        const totalVotes = publishedResults.reduce((acc, p) => acc + p.voteCount, 0)
+        const totalDPT = await prisma.voter.count({ where: { isInDPT: true } })
+        const totalVoted = await prisma.voter.count({ where: { hasVoted: true, isInDPT: true } })
+
+        const candidatesWithSnapshot = candidates.map(c => {
+          const published = publishedResults.find(p => p.candidateId === c.id)
+          return {
+            id: c.id,
+            name: c.name,
+            tagline: c.tagline,
+            vision: c.vision,
+            mission: c.mission,
+            major: c.major,
+            photo: c.photo,
+            draftLink: c.draftLink,
+            isHidden: c.isHidden,
+            voteCount: published?.voteCount ?? 0,
+            percentage: totalVotes === 0 ? 0 : ((published?.voteCount ?? 0) / totalVotes) * 100,
+          }
+        })
+
+        return NextResponse.json({
+          election: {
+            isOpen: settings.isOpen,
+            countdownEnd: settings.countdownEnd?.toISOString(),
+            countdownType: settings.countdownType,
+            voteButtonState: settings.voteButtonState || 'default',
+            resultsPublished: settings.resultsPublished,
+            resultsPublishedAt: settings.resultsPublishedAt?.toISOString() || null,
+          },
+          totals: { totalVotes, totalDPT, totalVoted, turnoutPct: totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100 },
+          candidates: candidatesWithSnapshot,
+          isSnapshot: true,
+          snapshotAt: settings.resultsPublishedAt?.toISOString() || null,
+        })
+      }
 
       return NextResponse.json({
-        election: {
-          isOpen: settings.isOpen,
-          countdownEnd: settings.countdownEnd?.toISOString(),
-          countdownType: settings.countdownType,
-          voteButtonState: settings.voteButtonState || 'default',
-          resultsPublished: settings.resultsPublished,
-          resultsPublishedAt: settings.resultsPublishedAt?.toISOString() || null,
-        },
-        totals: { totalVotes, totalDPT, totalVoted, turnoutPct: totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100 },
+        election: buildPublicElection(settings),
         candidates: candidatesData,
-        isSnapshot: true,
-        snapshotAt: settings.resultsPublishedAt?.toISOString() || null,
       })
     }
 
@@ -168,15 +196,7 @@ export async function GET(request: Request) {
     }))
 
     return NextResponse.json({
-      election: {
-        isOpen: settings.isOpen,
-        countdownEnd: settings.countdownEnd?.toISOString(),
-        countdownType: settings.countdownType,
-        voteButtonState: settings.voteButtonState || 'default',
-        resultsPublished: settings.resultsPublished,
-        resultsPublishedAt: settings.resultsPublishedAt?.toISOString() || null,
-      },
-      totals: null,
+      election: buildPublicElection(settings),
       candidates: candidatesData,
     })
   } catch (error) {
