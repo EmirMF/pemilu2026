@@ -6,6 +6,7 @@ import { Search, ArrowUpDown } from "lucide-react";
 interface Voter {
   id: string;
   nim: string;
+  angkatan: number | null;
   name: string | null;
   email: string;
   hasVoted: boolean;
@@ -20,6 +21,7 @@ export default function VotersClient() {
   const [voters, setVoters] = useState<Voter[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedAngkatan, setSelectedAngkatan] = useState("");
   const [sortField, setSortField] = useState<SortField>('votedAt');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
 
@@ -50,12 +52,23 @@ export default function VotersClient() {
     }
   };
 
+  const availableAngkatan = useMemo(() => {
+    return Array.from(
+      new Set(voters.map((voter) => voter.angkatan).filter((angkatan): angkatan is number => angkatan !== null))
+    ).sort((a, b) => a - b);
+  }, [voters]);
+
   const filteredAndSortedVoters = useMemo(() => {
     let filtered = voters.filter(voter => 
       voter.nim.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (voter.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-      voter.email.toLowerCase().includes(searchQuery.toLowerCase())
+      voter.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (voter.angkatan?.toString() || '').includes(searchQuery.toLowerCase())
     );
+
+    if (selectedAngkatan) {
+      filtered = filtered.filter((voter) => voter.angkatan?.toString() === selectedAngkatan);
+    }
 
     filtered.sort((a, b) => {
       let aValue: string | boolean | Date;
@@ -88,7 +101,17 @@ export default function VotersClient() {
     });
 
     return filtered;
-  }, [voters, searchQuery, sortField, sortOrder]);
+  }, [voters, searchQuery, selectedAngkatan, sortField, sortOrder]);
+
+  const votedCount = useMemo(
+    () => filteredAndSortedVoters.filter((voter) => voter.hasVoted).length,
+    [filteredAndSortedVoters]
+  );
+
+  const notVotedCount = useMemo(
+    () => filteredAndSortedVoters.filter((voter) => !voter.hasVoted).length,
+    [filteredAndSortedVoters]
+  );
 
   if (loading) {
     return (
@@ -114,24 +137,45 @@ export default function VotersClient() {
       <div className="bg-white dark:bg-neutral-900 rounded-2xl shadow-sm border border-neutral-100 dark:border-neutral-700 overflow-hidden">
         <div className="p-4 lg:p-6 border-b border-neutral-100 dark:border-neutral-700">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <h3 className="text-base lg:text-lg font-semibold text-neutral-800 dark:text-neutral-100">
-              Total Pemilih: {filteredAndSortedVoters.length}
-            </h3>
-            <div className="relative w-full sm:w-auto">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 dark:text-neutral-500" size={18} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Cari NIM, Nama, atau Email..."
-                className="pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 w-full sm:w-64 text-sm lg:text-base"
-              />
+            <div className="space-y-1">
+              <h3 className="text-base lg:text-lg font-semibold text-neutral-800 dark:text-neutral-100">
+                Total Pemilih: {filteredAndSortedVoters.length}
+              </h3>
+              <p className="text-xs lg:text-sm text-neutral-500 dark:text-neutral-400">
+                Sudah memilih: {votedCount} · Belum memilih: {notVotedCount}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <div className="relative w-full sm:w-48">
+                <select
+                  value={selectedAngkatan}
+                  onChange={(e) => setSelectedAngkatan(e.target.value)}
+                  className="w-full appearance-none px-4 py-2 pr-9 border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 text-sm lg:text-base"
+                >
+                  <option value="">Semua angkatan</option>
+                  {availableAngkatan.map((angkatan) => (
+                    <option key={angkatan} value={angkatan.toString()}>
+                      {angkatan}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="relative w-full sm:w-auto">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-400 dark:text-neutral-500" size={18} />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari NIM, Nama, Email, atau Angkatan..."
+                  className="pl-10 pr-4 py-2 border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-secondary-500 w-full sm:w-64 text-sm lg:text-base"
+                />
+              </div>
             </div>
           </div>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left min-w-200">
+          <table className="w-full text-left min-w-275">
             <thead className="bg-neutral-50 dark:bg-neutral-900 border-b border-neutral-100 dark:border-neutral-700">
               <tr>
                 <th className="px-4 lg:px-6 py-3 lg:py-4 font-semibold text-neutral-600 dark:text-neutral-400 text-xs lg:text-sm">
@@ -145,6 +189,9 @@ export default function VotersClient() {
                 </th>
                 <th className="px-4 lg:px-6 py-3 lg:py-4 font-semibold text-neutral-600 dark:text-neutral-400 text-xs lg:text-sm">
                   Nama
+                </th>
+                <th className="px-4 lg:px-6 py-3 lg:py-4 font-semibold text-neutral-600 dark:text-neutral-400 text-xs lg:text-sm">
+                  Angkatan
                 </th>
                 <th className="px-4 lg:px-6 py-3 lg:py-4 font-semibold text-neutral-600 dark:text-neutral-400 text-xs lg:text-sm">
                   <button
@@ -180,6 +227,9 @@ export default function VotersClient() {
                 <tr key={voter.id} className="hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors">
                   <td className="px-4 lg:px-6 py-3 lg:py-4 text-neutral-900 dark:text-neutral-100 font-medium text-xs lg:text-sm">{voter.nim}</td>
                   <td className="px-4 lg:px-6 py-3 lg:py-4 text-neutral-900 dark:text-neutral-100 text-xs lg:text-sm">{voter.name || '-'}</td>
+                  <td className="px-4 lg:px-6 py-3 lg:py-4 text-neutral-900 dark:text-neutral-100 text-xs lg:text-sm">
+                    {voter.angkatan ?? '-'}
+                  </td>
                   <td className="px-4 lg:px-6 py-3 lg:py-4 text-neutral-500 dark:text-neutral-400 text-xs lg:text-sm truncate max-w-37.5 lg:max-w-none">{voter.email}</td>
                   <td className="px-4 lg:px-6 py-3 lg:py-4">
                     {voter.hasVoted ? (
@@ -222,7 +272,7 @@ export default function VotersClient() {
               ))}
               {filteredAndSortedVoters.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 lg:px-6 py-6 lg:py-8 text-center text-neutral-500 dark:text-neutral-400 text-sm lg:text-base">
+                  <td colSpan={6} className="px-4 lg:px-6 py-6 lg:py-8 text-center text-neutral-500 dark:text-neutral-400 text-sm lg:text-base">
                     {searchQuery ? "Tidak ada pemilih yang sesuai dengan pencarian" : "Tidak ada data pemilih."}
                   </td>
                 </tr>
