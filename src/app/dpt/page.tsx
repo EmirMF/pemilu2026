@@ -10,6 +10,8 @@ import GradientBackground from '@/components/GradientBackground'
 type DPTItem = {
   nim: string
   name?: string | null
+  hasVoted?: boolean
+  votedAt?: string | null
 }
 
 type DPTResponse = {
@@ -187,6 +189,16 @@ export default function DPTPage() {
                         <div className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed">
                           {item.name || 'Nama tidak tersedia'}
                         </div>
+
+                          <div
+                            className={
+                              item.hasVoted
+                                ? 'mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border border-emerald-300 bg-emerald-100 text-emerald-800 dark:border-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+                                : 'mt-4 inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold border border-rose-300 bg-rose-100 text-rose-800 dark:border-rose-700 dark:bg-rose-900/40 dark:text-rose-300'
+                            }
+                          >
+                            {item.hasVoted ? 'Sudah memilih' : 'Belum memilih'}
+                          </div>
                       </motion.div>
                     ))}
                   </div>

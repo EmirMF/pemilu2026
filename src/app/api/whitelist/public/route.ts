@@ -23,6 +23,8 @@ export async function GET(request: Request) {
       select: {
         nim: true,
         name: true,
+        hasVoted: true,
+        votedAt: true,
       },
     })
 
