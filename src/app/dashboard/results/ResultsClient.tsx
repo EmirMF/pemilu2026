@@ -24,7 +24,7 @@ type ResultsResponse = {
   totals: { totalVotes: number; totalDPT: number; totalVoted: number; turnoutPct: number }
   candidates: ResultCandidate[]
   records: VoteRecordRow[] | null
-  pagination: { take: number; skip: number } | null
+  pagination: { take: number; skip: number; hasMore: boolean } | null
 }
 
 interface StatisticsData {
@@ -76,7 +76,7 @@ function BarChart({ candidates }: { candidates: ResultCandidate[] }) {
             </div>
             <div className="h-3 bg-neutral-100 dark:bg-neutral-800 rounded-full overflow-hidden">
               <div
-                className="h-full bg-gradient-to-r from-red-500 to-orange-400 rounded-full"
+                className="h-full bg-linear-to-r from-red-500 to-orange-400 rounded-full"
                 style={{ width: `${widthPct}%` }}
               />
             </div>
@@ -99,6 +99,11 @@ export default function ResultsClient() {
   const recordsTake = 50
 
   const exportUrl = useMemo(() => '/api/results/export', [])
+
+  const loadRecordsPage = async (skip: number) => {
+    setRecordsSkip(skip)
+    await fetchResults({ includeRecords: true, skip })
+  }
 
   const fetchResults = async (opts?: { includeRecords?: boolean; skip?: number; forceRealtime?: boolean }) => {
     const includeRecords = opts?.includeRecords ?? false
@@ -283,12 +288,21 @@ export default function ResultsClient() {
               className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100"
               onClick={async () => {
                 const nextSkip = recordsSkip + recordsTake
-                setRecordsSkip(nextSkip)
-                await fetchResults({ includeRecords: true, skip: nextSkip })
+                await loadRecordsPage(nextSkip)
               }}
-              disabled={loading}
+              disabled={loading || !data?.pagination?.hasMore}
             >
               Halaman berikutnya
+            </button>
+            <button
+              className="text-sm font-medium text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-neutral-100 disabled:opacity-40 disabled:cursor-not-allowed"
+              onClick={async () => {
+                const prevSkip = Math.max(recordsSkip - recordsTake, 0)
+                await loadRecordsPage(prevSkip)
+              }}
+              disabled={loading || recordsSkip === 0}
+            >
+              Halaman sebelumnya
             </button>
           </div>
 
@@ -360,7 +374,7 @@ export default function ResultsClient() {
               <h3 className="text-lg font-bold text-neutral-800 dark:text-neutral-100 mb-4">Jam Puncak (Top 5)</h3>
               <div className="space-y-3">
                 {statistics.peakHours.map((peak, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-gradient-to-r from-orange-50 dark:from-orange-900/30 to-white dark:to-neutral-800 rounded-lg border border-orange-100 dark:border-orange-800">
+                  <div key={index} className="flex items-center justify-between p-3 bg-linear-to-r from-orange-50 dark:from-orange-900/30 to-white dark:to-neutral-800 rounded-lg border border-orange-100 dark:border-orange-800">
                     <div className="flex items-center gap-3">
                       <span className="text-2xl font-bold text-orange-500">#{index + 1}</span>
                       <span className="font-medium text-neutral-700 dark:text-neutral-300">{peak.time}</span>

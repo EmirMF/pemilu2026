@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { Lock } from 'lucide-react'
 import bcrypt from 'bcryptjs'
 
-type VoteButtonState = 'default' | 'before' | 'hidden'
+type VoteButtonState = 'default' | 'before' | 'hidden' | 'lihat hasil'
 
 const voteButtonStateOptions: Array<{
   key: VoteButtonState
@@ -15,6 +15,7 @@ const voteButtonStateOptions: Array<{
   { key: 'default', label: 'Default', description: 'Mode normal: tombol untuk vote/login vote.', requiresPassword: true },
   { key: 'before', label: 'Before', description: 'Tombol berubah menjadi "Kenali Calonmu".', requiresPassword: false },
   { key: 'hidden', label: 'Hidden', description: 'Tombol disembunyikan dari landing page.', requiresPassword: false },
+  { key: 'lihat hasil', label: 'Lihat Hasil', description: 'Tombol menuju halaman hasil pemilihan publik.', requiresPassword: true },
 ]
 
 type ElectionSettings = {

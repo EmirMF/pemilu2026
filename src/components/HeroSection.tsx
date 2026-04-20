@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
 import Button from './ui/Button';
 import ShinyText from './ShinyText';
 
-type VoteButtonState = 'default' | 'before' | 'hidden'
+type VoteButtonState = 'default' | 'before' | 'hidden' | 'lihat hasil'
 
 export default function HeroSection({
   electionIsOpen,
@@ -41,12 +41,7 @@ export default function HeroSection({
   };
 
   const scrollToResults = () => {
-    const target = document.getElementById('results')
-    if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      return
-    }
-    window.location.hash = 'results'
+    window.location.href = '/hasil'
   }
 
   const scrollToCandidates = () => {
@@ -65,6 +60,14 @@ export default function HeroSection({
       return {
         label: 'Kenali Calonmu',
         onClick: scrollToCandidates,
+        disabled: false,
+      }
+    }
+
+    if (voteButtonState === 'lihat hasil') {
+      return {
+        label: 'Lihat Hasil',
+        onClick: scrollToResults,
         disabled: false,
       }
     }

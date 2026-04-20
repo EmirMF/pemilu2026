@@ -1,4 +1,5 @@
 import prisma from '@/lib/prisma'
+import { getElectionSettings } from '@/lib/election'
 import { cookies } from 'next/headers'
 import { verifyCookie } from '@/lib/secureCookie'
 
@@ -41,30 +42,67 @@ export async function GET() {
     return new Response('Unauthorized', { status: 401 })
   }
 
-  const candidates = await prisma.candidate.findMany({
-    orderBy: { id: 'asc' },
-    include: { _count: { select: { VoteRecords: true } } },
+  const settings = await getElectionSettings()
+
+  let resolvedRows: Array<{ id: string; name: string; voteCount: number }>
+  if (settings.resultsPublished) {
+    const publishedResults = await prisma.publishedResult.findMany({ orderBy: { voteCount: 'desc' } })
+    const candidates = await prisma.candidate.findMany({ orderBy: { id: 'asc' } })
+
+    resolvedRows = candidates.map((c) => {
+      const published = publishedResults.find((p) => p.candidateId === c.id)
+      return {
+        id: c.id,
+        name: c.name,
+        voteCount: published?.voteCount ?? 0,
+      }
+    })
+  } else {
+    const candidates = await prisma.candidate.findMany({
+      orderBy: { id: 'asc' },
+      include: { _count: { select: { VoteRecords: true } } },
+    })
+
+    resolvedRows = candidates.map((c) => ({
+      id: c.id,
+      name: c.name,
+      voteCount: c._count.VoteRecords,
+    }))
+  }
+
+  const totalVotes = resolvedRows.reduce((acc, r) => acc + r.voteCount, 0)
+
+  const voteRecords = await prisma.voteRecord.findMany({
+    orderBy: { createdAt: 'desc' },
+    include: { candidate: { select: { id: true, name: true } } },
   })
 
-  const rows = candidates.map((c) => ({
-    id: c.id,
-    name: c.name,
-    voteCount: c._count.VoteRecords,
-  }))
-  const totalVotes = rows.reduce((acc, r) => acc + r.voteCount, 0)
-
-  const header = ['candidateId', 'candidateName', 'votes', 'percentage']
+  const header = ['rowType', 'candidateId', 'candidateName', 'votes', 'percentage', 'recordId', 'recordCreatedAt']
   const lines = [
     header.join(','),
-    ...rows.map((r) => {
+    ...resolvedRows.map((r) => {
       const pct = totalVotes === 0 ? 0 : (r.voteCount / totalVotes) * 100
       return [
+        'candidate',
         csvEscape(r.id),
         csvEscape(r.name),
         String(r.voteCount),
         pct.toFixed(2),
+        '',
+        '',
       ].join(',')
     }),
+    ...voteRecords.map((record) =>
+      [
+        'record',
+        csvEscape(record.candidateId),
+        csvEscape(record.candidate.name),
+        '',
+        '',
+        csvEscape(record.id),
+        csvEscape(record.createdAt.toISOString()),
+      ].join(','),
+    ),
   ]
 
   const csv = lines.join('\n')

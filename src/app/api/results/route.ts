@@ -27,6 +27,8 @@ function buildPublicElection(settings: Awaited<ReturnType<typeof getElectionSett
     countdownEnd: settings.countdownEnd?.toISOString(),
     countdownType: settings.countdownType,
     voteButtonState: settings.voteButtonState || 'default',
+    resultsPublished: settings.resultsPublished,
+    resultsPublishedAt: settings.resultsPublishedAt?.toISOString() || null,
   }
 }
 
@@ -55,20 +57,6 @@ export async function GET(request: Request) {
         orderBy: { id: 'asc' },
       })
       
-      const candidatesData = candidates.map(c => {
-        return {
-          id: c.id,
-          name: c.name,
-          tagline: c.tagline,
-          vision: c.vision,
-          mission: c.mission,
-          major: c.major,
-          photo: c.photo,
-          draftLink: c.draftLink,
-          isHidden: c.isHidden,
-        }
-      })
-
       if (isAdmin) {
         const totalVotes = publishedResults.reduce((acc, p) => acc + p.voteCount, 0)
         const totalDPT = await prisma.voter.count({ where: { isInDPT: true } })
@@ -91,6 +79,26 @@ export async function GET(request: Request) {
           }
         })
 
+        let records = null
+        let pagination = null
+        if (includeRecords) {
+          const vr = await prisma.voteRecord.findMany({
+            orderBy: { createdAt: 'desc' },
+            take: take + 1,
+            skip,
+            include: { candidate: { select: { id: true, name: true } } },
+          })
+          const hasMore = vr.length > take
+          const pageRows = hasMore ? vr.slice(0, take) : vr
+          records = pageRows.map(r => ({
+            id: r.id,
+            createdAt: r.createdAt.toISOString(),
+            candidateId: r.candidateId,
+            candidateName: r.candidate.name,
+          }))
+          pagination = { take, skip, hasMore }
+        }
+
         return NextResponse.json({
           election: {
             isOpen: settings.isOpen,
@@ -102,14 +110,42 @@ export async function GET(request: Request) {
           },
           totals: { totalVotes, totalDPT, totalVoted, turnoutPct: totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100 },
           candidates: candidatesWithSnapshot,
+          records,
+          pagination,
           isSnapshot: true,
           snapshotAt: settings.resultsPublishedAt?.toISOString() || null,
         })
       }
 
+      const totalVotes = publishedResults.reduce((acc, p) => acc + p.voteCount, 0)
+      const totalDPT = await prisma.voter.count({ where: { isInDPT: true } })
+      const totalVoted = await prisma.voter.count({ where: { hasVoted: true, isInDPT: true } })
+      const candidatesWithSnapshot = candidates.map(c => {
+        const published = publishedResults.find(p => p.candidateId === c.id)
+        return {
+          id: c.id,
+          name: c.name,
+          tagline: c.tagline,
+          vision: c.vision,
+          mission: c.mission,
+          major: c.major,
+          photo: c.photo,
+          draftLink: c.draftLink,
+          isHidden: c.isHidden,
+          voteCount: published?.voteCount ?? 0,
+          percentage: totalVotes === 0 ? 0 : ((published?.voteCount ?? 0) / totalVotes) * 100,
+        }
+      })
+
       return NextResponse.json({
         election: buildPublicElection(settings),
-        candidates: candidatesData,
+        totals: {
+          totalVotes,
+          totalDPT,
+          totalVoted,
+          turnoutPct: totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100,
+        },
+        candidates: candidatesWithSnapshot,
       })
     }
 
@@ -145,19 +181,23 @@ export async function GET(request: Request) {
       })
 
       let records = null
+      let pagination = null
       if (includeRecords) {
         const vr = await prisma.voteRecord.findMany({
           orderBy: { createdAt: 'desc' },
-          take,
+          take: take + 1,
           skip,
           include: { candidate: { select: { id: true, name: true } } },
         })
-        records = vr.map(r => ({
+        const hasMore = vr.length > take
+        const pageRows = hasMore ? vr.slice(0, take) : vr
+        records = pageRows.map(r => ({
           id: r.id,
           createdAt: r.createdAt.toISOString(),
           candidateId: r.candidateId,
           candidateName: r.candidate.name,
         }))
+        pagination = { take, skip, hasMore }
       }
 
       return NextResponse.json({
@@ -173,7 +213,7 @@ export async function GET(request: Request) {
         totals: { totalVotes, totalDPT, totalVoted, turnoutPct: totalDPT === 0 ? 0 : (totalVoted / totalDPT) * 100 },
         candidates: candidatesData,
         records,
-        pagination: includeRecords ? { take, skip } : null,
+        pagination,
       })
     }
 

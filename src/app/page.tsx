@@ -25,7 +25,7 @@ type ResultsResponse = {
     isOpen: boolean
     countdownEnd: string | null
     countdownType: string | null
-    voteButtonState: 'default' | 'before' | 'hidden'
+    voteButtonState: 'default' | 'before' | 'hidden' | 'lihat hasil'
   }
   candidates: Array<ResultCandidate>
 }
@@ -35,7 +35,7 @@ export default function LandingPage() {
   const [countdownEnd, setCountdownEnd] = useState<string | null>(null)
   const [countdownType, setCountdownType] = useState<string | null>(null)
   const [candidates, setCandidates] = useState<ResultCandidate[]>([])
-  const [voteButtonState, setVoteButtonState] = useState<'default' | 'before' | 'hidden'>('default')
+  const [voteButtonState, setVoteButtonState] = useState<'default' | 'before' | 'hidden' | 'lihat hasil'>('default')
   
   let theme = 'light'
   try {

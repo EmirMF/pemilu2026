@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 import { cookies } from 'next/headers'
 import { verifyCookie } from '@/lib/secureCookie'
 
-const VOTE_BUTTON_STATES = ['default', 'before', 'hidden'] as const
+const VOTE_BUTTON_STATES = ['default', 'before', 'hidden', 'lihat hasil'] as const
 type VoteButtonState = (typeof VOTE_BUTTON_STATES)[number]
 
 function isVoteButtonState(value: unknown): value is VoteButtonState {
@@ -97,8 +97,8 @@ export async function PUT(request: Request) {
         )
       }
 
-      // Password required for 'default' state
-      if (body.voteButtonState === 'default') {
+      // Password required for sensitive states
+      if (body.voteButtonState === 'default' || body.voteButtonState === 'lihat hasil') {
         if (!body.password) {
           return NextResponse.json(
             { error: 'Password sistem diperlukan.' },
