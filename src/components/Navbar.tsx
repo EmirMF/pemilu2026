@@ -12,6 +12,7 @@ export default function Navbar() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [isElectionOpen, setIsElectionOpen] = useState(true)
+  const [voteButtonState, setVoteButtonState] = useState<'default' | 'before' | 'hidden' | 'lihat hasil'>('default')
   const userMenuRef = useRef<HTMLDivElement>(null)
   const { showToast } = useToast()
 
@@ -32,6 +33,7 @@ export default function Navbar() {
       .then(res => res.json())
       .then(data => {
         setIsElectionOpen(data.isOpen ?? true)
+        setVoteButtonState(data.voteButtonState ?? 'default')
       })
       .catch(err => console.error('Failed to fetch election status:', err))
   }, [])
@@ -76,13 +78,18 @@ export default function Navbar() {
     ? [{ label: 'Vote', href: '/vote' }]
     : [{ label: 'Login', href: '/login' }]
 
+  const showResultsNav = voteButtonState === 'lihat hasil'
+  const actionNavItem = showResultsNav
+    ? { label: 'Hasil', href: '/hasil' }
+    : authNavItems[0]
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-40 bg-cream-50/90 dark:bg-neutral-950/90 backdrop-blur-lg border-b border-primary-200/50 dark:border-neutral-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <a href="/" className="flex items-center gap-2">
                 <Image 
                   src="/logo.png" 
@@ -119,27 +126,23 @@ export default function Navbar() {
                 )
               ))}
               
-              {/* Login/Vote Button */}
-              {authNavItems.map((item) => (
-                item.label === 'Vote' && !isElectionOpen ? (
-                  <button
-                    key={item.label}
-                    onClick={() => showToast('Voting belum dibuka', 'error')}
-                    className="text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 text-sm font-medium transition-colors flex items-center gap-1"
-                  >
-                    {item.label}
-                  </button>
-                ) : (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    className="text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 text-sm font-medium transition-colors flex items-center gap-1"
-                  >
-                    {item.label === 'Login' && <LogIn size={16} />}
-                    {item.label}
-                  </a>
-                )
-              ))}
+              {/* Login/Vote/Hasil Button */}
+              {actionNavItem.label === 'Vote' && !isElectionOpen ? (
+                <button
+                  onClick={() => showToast('Voting ditutup', 'error')}
+                  className="text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 text-sm font-medium transition-colors flex items-center gap-1"
+                >
+                  {actionNavItem.label}
+                </button>
+              ) : (
+                <a
+                  href={actionNavItem.href}
+                  className="text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 text-sm font-medium transition-colors flex items-center gap-1"
+                >
+                  {actionNavItem.label === 'Login' && <LogIn size={16} />}
+                  {actionNavItem.label}
+                </a>
+              )}
 
               {/* Theme Toggle Button */}
               <ThemeToggle className="p-2 text-neutral-700 dark:text-neutral-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-neutral-800/50 rounded-lg transition-colors" />
@@ -160,7 +163,7 @@ export default function Navbar() {
                       {isAdmin && (
                         <a
                           href="/dashboard"
-                          className="w-full px-4 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-800 flex items-center gap-2 transition-colors block"
+                          className="w-full px-4 py-2 text-left text-sm text-neutral-700 dark:text-neutral-300 hover:bg-primary-50 dark:hover:bg-neutral-800 inline-flex items-center gap-2 transition-colors"
                         >
                           <LayoutDashboard size={16} />
                           <span>Dashboard</span>
@@ -223,31 +226,27 @@ export default function Navbar() {
                 className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
               />
               
-              {/* Login/Vote Button in Mobile */}
-              {authNavItems.map((item) => (
-                item.label === 'Vote' && !isElectionOpen ? (
-                  <button
-                    key={item.label}
-                    onClick={() => {
-                      showToast('Voting belum dibuka', 'error')
-                      setIsMobileMenuOpen(false)
-                    }}
-                    className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    {item.label}
-                  </button>
-                ) : (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
-                  >
-                    {item.label === 'Login' && <LogIn size={16} />}
-                    {item.label}
-                  </a>
-                )
-              ))}
+              {/* Login/Vote/Hasil Button in Mobile */}
+              {actionNavItem.label === 'Vote' && !isElectionOpen ? (
+                <button
+                  onClick={() => {
+                    showToast('Voting ditutup', 'error')
+                    setIsMobileMenuOpen(false)
+                  }}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
+                >
+                  {actionNavItem.label}
+                </button>
+              ) : (
+                <a
+                  href={actionNavItem.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-2 w-full text-left px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-secondary-600 dark:hover:text-secondary-400 hover:bg-primary-100/50 dark:hover:bg-gray-700/50 rounded-lg text-sm font-medium transition-colors"
+                >
+                  {actionNavItem.label === 'Login' && <LogIn size={16} />}
+                  {actionNavItem.label}
+                </a>
+              )}
                
               {/* User Menu in Mobile */}
               {userNim && (
